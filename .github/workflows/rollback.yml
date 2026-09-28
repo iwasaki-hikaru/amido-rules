@@ -1,0 +1,162 @@
+# 本番を前の版に戻す（手動でだけ実行する）。手順と注意は docs/runbook.md の「前の版に戻す」を参照。
+#
+# 戻し方は 2 つ：
+#   - version_id を空にする … wrangler rollback で直前の版に戻す（version_id を指定すれば、その Worker の版に戻す）
+#     Cloudflare に残っている直近 100 版までしか戻せない
+#   - release_tag を指定する … GitHub Release に保管した一式（rules-<版>.tar.gz）を、検証してから公開し直す
+#
+# アプリは「manifest の版が今と違えば適用する」ので、古い版に戻すと、利用者の端末も古い版に戻る。
+# 戻したあと main を直さないと、次の公開（push・週 1 回）でまた同じ内容が公開されることに注意。
+name: 前の版に戻す
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: 戻す先の Worker の版の ID（空なら直前の版。Cloudflare の管理画面か wrangler versions list で確かめる）
+        type: string
+        required: false
+        default: ""
+      release_tag:
+        description: GitHub Release から公開し直すときのタグ（例 rules-2026.10.05.1）。version_id と同時には使えない
+        type: string
+        required: false
+        default: ""
+      reason:
+        description: 戻す理由（Cloudflare の記録に残る。120 文字まで）
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# 公開（publish.yml の deploy ジョブ）と同時に動かないようにする
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  rollback:
+    name: 前の版に戻す
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 30
+    # 秘密情報は、この environment にだけ置く
+    environment: production
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      WRANGLER_SEND_METRICS: "false"
+      VERSION_ID: ${{ inputs.version_id }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      REASON: ${{ inputs.reason }}
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # 入力はシェルに直接埋め込まず、環境変数で受け取って形を確かめる
+      - name: 入力を確かめる
+        run: |
+          if [ -n "$VERSION_ID" ] && [ -n "$RELEASE_TAG" ]; then
+            echo "::error::version_id と release_tag は、どちらか 1 つだけを指定してください"
+            exit 1
+          fi
+          if [ -n "$VERSION_ID" ] && ! [[ "$VERSION_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            echo "::error::version_id の形が正しくありません（例：01234567-89ab-cdef-0123-456789abcdef）"
+            exit 1
+          fi
+          if [ -n "$RELEASE_TAG" ] && ! [[ "$RELEASE_TAG" =~ ^rules-[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[1-9][0-9]*$ ]]; then
+            echo "::error::release_tag の形が正しくありません（例：rules-2026.10.05.1）"
+            exit 1
+          fi
+          if [ ${#REASON} -gt 120 ]; then
+            echo "::error::reason は 120 文字までにしてください"
+            exit 1
+          fi
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）"
+            exit 1
+          fi
+
+      - name: rulestool をビルドする
+        run: |
+          swift build -c release --product rulestool
+          bin=$(swift build -c release --show-bin-path)
+          echo "RULESTOOL=$bin/rulestool" >> "$GITHUB_ENV"
+          host=$(jq -r .host config/distribution.json)
+          if [[ "$host" == *PLACEHOLDER* ]]; then
+            echo "::error::配信ホストが仮の値です（config/distribution.json）"
+            exit 1
+          fi
+          echo "HOST=$host" >> "$GITHUB_ENV"
+
+      - name: wrangler を入れる
+        working-directory: deploy
+        run: npm ci --no-audit --no-fund
+
+      - name: GitHub Release の一式を取得して検証する
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/release dist
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "$RELEASE_TAG.tar.gz" --dir build/release
+          tar -xzf "build/release/$RELEASE_TAG.tar.gz" -C dist
+          "$RULESTOOL" verify --dir dist --keys keys/trusted-public-keys.json
+          node .github/scripts/verify-manifest.mjs --dir dist --keys keys/trusted-public-keys.json
+
+      - name: GitHub Release の一式を公開し直す
+        if: inputs.release_tag != ''
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          message="公開し直し：$RELEASE_TAG${REASON:+（$REASON）}"
+          ./node_modules/.bin/wrangler deploy --config ../wrangler.jsonc --message "${message:0:120}"
+
+      - name: wrangler rollback で戻す
+        if: inputs.release_tag == ''
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          message="手動の巻き戻し${REASON:+：$REASON}"
+          args=(rollback --config ../wrangler.jsonc --yes --message "${message:0:120}")
+          if [ -n "$VERSION_ID" ]; then
+            args+=("$VERSION_ID")
+          fi
+          ./node_modules/.bin/wrangler "${args[@]}"
+
+      # 戻したあとの本番を、アプリと同じ順番で検証する（反映に少し時間がかかることがあるので、何回か取り直す）
+      - name: 本番を検証する
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if [ -n "$RELEASE_TAG" ]; then
+              curl --fail --silent --show-error --proto '=https' --header 'Cache-Control: no-cache' \
+                --output build/live-manifest.json "https://$HOST/v1/manifest.json" || true
+              if ! cmp -s build/live-manifest.json dist/v1/manifest.json; then
+                echo "本番の manifest が、まだ公開し直したものと違います（$attempt 回目）"
+                sleep 20
+                continue
+              fi
+            fi
+            if "$RULESTOOL" verify --base-url "https://$HOST/" --keys keys/trusted-public-keys.json; then
+              version=$(curl --fail --silent --proto '=https' "https://$HOST/v1/manifest.json" | jq -r .version)
+              echo "本番の版：$version"
+              echo "- 本番の版：$version" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "まだ検証できません（$attempt 回目）。20 秒後に取り直します"
+            sleep 20
+          done
+          echo "::error::戻したあとの本番を検証できません。docs/runbook.md を参照"
+          exit 1

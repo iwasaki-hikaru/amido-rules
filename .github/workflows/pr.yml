@@ -1,0 +1,122 @@
+# PR の検査：テスト、ルールの変換と検査（WebKit での実コンパイルを含む）、配信の設定の検査。
+#
+# - 秘密情報は使わない。フォークからの PR でも同じように動く。
+# - pull_request_target は使わない（PR のコードを、秘密情報や書き込み権限のある状態で動かさないため）。
+# - アクションは GitHub 公式のものだけを、コミットの SHA で固定する（コメントはその SHA のタグ）。
+name: PR の検査
+
+on:
+  pull_request:
+    # labeled・unlabeled は、ラベル「allow-count-change」を付け外ししたときに検査し直すため
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: 検査
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      # ランナーの既定の Xcode が変わっても影響を受けないように、版を明示して選ぶ
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 環境を記録する
+        run: |
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
+            exit 1
+          fi
+          sw_vers
+          xcodebuild -version
+          swift --version
+          echo "node $(node --version)"
+
+      - name: 配信の設定を検査する（wrangler.jsonc・_headers・site・deploy）
+        run: node .github/scripts/check-config.mjs
+
+      - name: 変換器の版を読む
+        id: converter
+        run: |
+          commit=$(sed -n 's/^COMMIT=//p' scripts/fetch-converter.sh)
+          if ! [[ "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error file=scripts/fetch-converter.sh::COMMIT を読めません"
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      # 変換器（SafariConverterLib）の取得とビルドには時間がかかるので、コミットごとにキャッシュする。
+      # fetch-converter.sh は .git がないと clone し直すので、.build だけでなくディレクトリごと保存する。
+      - name: 変換器のキャッシュを復元する
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools/SafariConverterLib
+          key: safariconverterlib-${{ steps.converter.outputs.commit }}-${{ runner.os }}-${{ runner.arch }}-xcode26.6
+
+      - name: 変換器を用意する
+        run: |
+          converter=$(scripts/fetch-converter.sh)
+          echo "CONVERTER=$converter" >> "$GITHUB_ENV"
+
+      - name: テスト
+        run: swift test
+
+      - name: rulestool をビルドする
+        run: |
+          swift build -c release --product rulestool
+          echo "RULESTOOL=$(swift build -c release --show-bin-path)/rulestool" >> "$GITHUB_ENV"
+
+      - name: ルールを作って検査する
+        env:
+          # 件数の大きな変化が意図したものなら、中身を確かめてから PR にラベルを付ける（docs/runbook.md）。
+          # ラベルは書き込み権限のある人しか付けられない
+          ALLOW_COUNT_CHANGE: ${{ contains(github.event.pull_request.labels.*.name, 'allow-count-change') && 'true' || 'false' }}
+        run: |
+          host=$(jq -r .host config/distribution.json)
+          args=(build --converter "$CONVERTER" --out build/out)
+          if [[ "$host" == *PLACEHOLDER* ]]; then
+            echo "::notice::配信ホストが仮の値なので、本番の manifest との件数の比較は飛ばします"
+          else
+            # 本番にまだ manifest がなければ（404）、rulestool は比較を飛ばす
+            args+=(--previous-manifest "https://$host/v1/manifest.json")
+          fi
+          if [ "$ALLOW_COUNT_CHANGE" = true ]; then
+            echo "::warning::ラベル allow-count-change があるので、件数の大きな変化を許して検査します"
+            args+=(--allow-count-change)
+          fi
+          "$RULESTOOL" "${args[@]}"
+
+      - name: 結果をまとめに出す
+        if: always()
+        run: |
+          if [ -f build/out/summary.md ]; then
+            cat build/out/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 配信するディレクトリを組み立てる（確認だけ。公開はしない）
+        run: |
+          "$RULESTOOL" site --site site --rules build/out --out dist
+          find dist -type f | sort
+
+      - name: 結果を保存する
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rules-pr-${{ github.event.pull_request.number }}
+          path: build/out
+          retention-days: 7
+          if-no-files-found: ignore

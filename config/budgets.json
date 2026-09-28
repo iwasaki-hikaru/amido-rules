@@ -1,0 +1,31 @@
+{
+  "allowlistMaxDomains" : 500,
+  "appReservedBytes" : 131072,
+  "appReservedRules" : 1,
+  "countChange" : {
+    "absoluteRules" : 100,
+    "relativePercent" : 30
+  },
+  "extensions" : {
+    "basic" : {
+      "categories" : [
+        "basic"
+      ],
+      "failBytes" : 10485760,
+      "failRules" : 65000,
+      "warnBytes" : 8388608,
+      "warnRules" : 55000
+    },
+    "plus" : {
+      "categories" : [
+        "annoyance",
+        "scam"
+      ],
+      "failBytes" : 10485760,
+      "failRules" : 65000,
+      "warnBytes" : 8388608,
+      "warnRules" : 55000
+    }
+  },
+  "fileSizeLimitBytes" : 26214400
+}

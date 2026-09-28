@@ -1,0 +1,471 @@
+# ルールの公開：変換と検査 → 署名 → Cloudflare に公開 → 本番を取り直して検証 → GitHub Release に保管。
+#
+# ジョブを 3 つに分け、秘密情報を持つ範囲を小さくする。
+#   build          … 変換と検査。秘密情報を持たない（上流のリストと変換器を扱うのはこのジョブだけ）
+#   deploy         … 署名と公開。production environment（main に限定）の中だけで動く
+#   report-failure … 週 1 回の実行が失敗したときに issue を作る。issues: write だけを持つ
+#
+# ルール（manifest の lists と min_app_build）が本番と同じとき：
+#   - 週 1 回の実行では、何もしない（署名し直さず、版も上げない）
+#   - push や手動の実行では、本番の manifest と署名をそのまま使い、サイトなどの変更だけを公開する
+#
+# アクションは GitHub 公式のものだけを、コミットの SHA で固定する（コメントはその SHA のタグ）。
+name: ルールの公開
+
+on:
+  push:
+    branches: [main]
+    # 配信するものに関係するファイルが変わったときだけ動かす（docs や README だけの変更では動かない）
+    paths:
+      - sources.yml
+      - custom/**
+      - config/**
+      - keys/**
+      - site/**
+      - wrangler.jsonc
+      - deploy/**
+      - Package.swift
+      - Sources/**
+      - scripts/fetch-converter.sh
+      - .github/workflows/publish.yml
+      - .github/scripts/**
+  schedule:
+    # 毎週月曜 03:37（日本時間）。毎時 0 分は混んで遅れたり落とされたりしやすいので避ける。
+    # リポジトリに 60 日間動きがないと、GitHub がこの定期実行を止める（docs/runbook.md を参照）
+    - cron: "37 18 * * 0"
+  workflow_dispatch:
+    inputs:
+      allow_count_change:
+        description: 件数の大きな変化を許す（失敗した実行のまとめで中身を確かめてから使う）
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# 公開は 1 回ずつ行う。途中で止めると署名や公開が中途半端になるので、実行中のものは取り消さない
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: 変換と検査
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      # ランナーの既定の Xcode が変わっても影響を受けないように、版を明示して選ぶ
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      deployable: ${{ steps.host.outputs.deployable }}
+      # build のときの本番の manifest（SHA-256。まだなければ absent）。deploy ジョブで、その間に変わっていないかを見る
+      live_sha256: ${{ steps.live.outputs.sha256 }}
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 環境を記録する
+        run: |
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
+            exit 1
+          fi
+          sw_vers
+          xcodebuild -version
+          swift --version
+          echo "node $(node --version)"
+
+      - name: 配信の設定を検査する（wrangler.jsonc・_headers・site・deploy）
+        run: node .github/scripts/check-config.mjs
+
+      - name: 配信ホストを読む
+        id: host
+        run: |
+          host=$(jq -r .host config/distribution.json)
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          if [[ "$host" == *PLACEHOLDER* ]]; then
+            echo "deployable=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::配信ホストが仮の値なので、変換と検査だけを行い、公開はしません。config/distribution.json の host と wrangler.jsonc の name を本物にしてください"
+          else
+            echo "deployable=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 変換器の版を読む
+        id: converter
+        run: |
+          commit=$(sed -n 's/^COMMIT=//p' scripts/fetch-converter.sh)
+          if ! [[ "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error file=scripts/fetch-converter.sh::COMMIT を読めません"
+            exit 1
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      # fetch-converter.sh は .git がないと clone し直すので、.build だけでなくディレクトリごと保存する
+      - name: 変換器のキャッシュを復元する
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools/SafariConverterLib
+          key: safariconverterlib-${{ steps.converter.outputs.commit }}-${{ runner.os }}-${{ runner.arch }}-xcode26.6
+
+      - name: 変換器を用意する
+        run: |
+          converter=$(scripts/fetch-converter.sh)
+          echo "CONVERTER=$converter" >> "$GITHUB_ENV"
+
+      - name: テスト
+        run: swift test
+
+      - name: rulestool をビルドする
+        run: |
+          swift build -c release --product rulestool
+          bin=$(swift build -c release --show-bin-path)
+          echo "RULESTOOL=$bin/rulestool" >> "$GITHUB_ENV"
+
+      # 件数の比較と、版の番号を決めるのに使う（まだ公開していなければ absent）
+      - name: 本番の manifest を取得する
+        id: live
+        env:
+          HOST: ${{ steps.host.outputs.host }}
+        run: |
+          state=$(.github/scripts/live-manifest.sh "$HOST" build/live-manifest.json)
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          if [ "$state" = present ]; then
+            echo "sha256=$(shasum -a 256 build/live-manifest.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha256=absent" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 同じ版の名前を 2 度使わないように、本番の版とタグ（rules-<版>）を見て決める
+      - name: 版を決める
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          today=$(date -u +%Y.%m.%d)
+          tags=$(gh api --paginate "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/rules-$today." --jq '.[].ref')
+          version=$(printf '%s\n' "$tags" | .github/scripts/next-version.sh "$today" build/live-manifest.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "この実行で作る版：$version"
+
+      - name: ルールを作って検査する
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          LIVE: ${{ steps.live.outputs.state }}
+          ALLOW_COUNT_CHANGE: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_count_change && 'true' || 'false' }}
+        run: |
+          args=(build --converter "$CONVERTER" --out build/out --version "$VERSION")
+          if [ "$LIVE" = present ]; then
+            args+=(--previous-manifest build/live-manifest.json)
+          fi
+          if [ "$ALLOW_COUNT_CHANGE" = true ]; then
+            echo "::warning::件数の大きな変化を許して実行します（手動の指定）"
+            args+=(--allow-count-change)
+          fi
+          "$RULESTOOL" "${args[@]}"
+
+      - name: 結果をまとめに出す
+        if: always()
+        run: |
+          if [ -f build/out/summary.md ]; then
+            cat build/out/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 結果を保存する
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rules-out
+          path: build/out
+          retention-days: 30
+          if-no-files-found: ignore
+
+  deploy:
+    name: 署名と公開
+    needs: build
+    if: needs.build.outputs.deployable == 'true' && github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 30
+    # 秘密情報（RULES_SIGNING_KEY・CLOUDFLARE_API_TOKEN・CLOUDFLARE_ACCOUNT_ID）は、この environment にだけ置く
+    environment: production
+    permissions:
+      contents: write # 版のタグと GitHub Release を作るため
+    # 手動の巻き戻し（rollback.yml）と同時に動かないようにする
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 環境を確かめる
+        run: |
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）"
+            exit 1
+          fi
+          xcodebuild -version
+          echo "node $(node --version)"
+
+      - name: 変換と検査の結果を受け取る
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rules-out
+          path: build/out
+
+      # 署名に使うツールは、このジョブでソースからビルドする（build ジョブの成果物の実行ファイルは使わない）
+      - name: rulestool をビルドする
+        run: |
+          swift build -c release --product rulestool
+          bin=$(swift build -c release --show-bin-path)
+          echo "RULESTOOL=$bin/rulestool" >> "$GITHUB_ENV"
+          host=$(jq -r .host config/distribution.json)
+          echo "HOST=$host" >> "$GITHUB_ENV"
+
+      # build のあと、deploy が始まるまでの間に、巻き戻し（rollback.yml）などで本番が変わっていたら止める。
+      # 巻き戻した直後に、巻き戻す前と同じ内容を自動で公開し直さないため
+      - name: 本番が build のときから変わっていないか確かめる
+        env:
+          BUILD_LIVE_SHA256: ${{ needs.build.outputs.live_sha256 }}
+        run: |
+          state=$(.github/scripts/live-manifest.sh "$HOST" build/live-now.json)
+          if [ "$state" = present ]; then
+            now=$(shasum -a 256 build/live-now.json | cut -d ' ' -f 1)
+          else
+            now=absent
+          fi
+          if [ -z "$BUILD_LIVE_SHA256" ]; then
+            echo "::error::build ジョブの本番の manifest の記録がありません"
+            exit 1
+          fi
+          if [ "$now" = "$BUILD_LIVE_SHA256" ]; then
+            echo "本番は build のときと同じです"
+            exit 0
+          fi
+          # このジョブの前の試行で公開した版なら（途中で失敗したジョブのやり直し）、続けてよい
+          if [ "$state" = present ] && [ "$(jq -r .version build/live-now.json)" = "$(jq -r .version build/out/v1/manifest.json)" ]; then
+            echo "::notice::本番は、この実行の前の試行で公開した版です（やり直し）"
+            exit 0
+          fi
+          echo "::error::build のあとに本番の manifest が変わりました（巻き戻しや、別の公開があった可能性があります）。意図したものかを確かめてから、もう一度実行してください（docs/runbook.md）"
+          exit 1
+
+      - name: 本番と比べる
+        id: compare
+        run: |
+          result=$("$RULESTOOL" compare --manifest build/out/v1/manifest.json --previous "https://$HOST/v1/manifest.json")
+          case "$result" in
+            changed | unchanged) ;;
+            *)
+              echo "::error::rulestool compare の結果を読めません：$result"
+              exit 1
+              ;;
+          esac
+          publish=true
+          sign=true
+          if [ "$result" = unchanged ]; then
+            if [ "$GITHUB_EVENT_NAME" = schedule ]; then
+              publish=false
+              echo "::notice::ルールは本番と同じなので、公開しません"
+            else
+              # ルールは同じなので、本番の manifest と署名をそのまま使う（版を上げない）
+              rm -rf build/live
+              mkdir -p build/live/v1
+              curl --fail --silent --show-error --proto '=https' --header 'Cache-Control: no-cache' \
+                --output build/live/v1/manifest.json "https://$HOST/v1/manifest.json"
+              curl --fail --silent --show-error --proto '=https' --header 'Cache-Control: no-cache' \
+                --output build/live/v1/manifest.json.sig "https://$HOST/v1/manifest.json.sig"
+              cp -R build/out/v1/lists build/live/v1/lists
+              if "$RULESTOOL" verify --dir build/live --keys keys/trusted-public-keys.json; then
+                cp build/live/v1/manifest.json build/live/v1/manifest.json.sig build/out/v1/
+                sign=false
+                echo "::notice::ルールは本番と同じなので、本番の manifest と署名をそのまま使い、サイトなどの変更だけを公開します"
+              else
+                echo "::warning::本番の署名を今の公開鍵（keys/trusted-public-keys.json）で検証できないので、署名し直して新しい版として公開します"
+              fi
+            fi
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "sign=$sign" >> "$GITHUB_OUTPUT"
+          version=$(jq -r .version build/out/v1/manifest.json)
+          echo "PUBLISHED_VERSION=$version" >> "$GITHUB_ENV"
+          {
+            echo "## 公開"
+            echo ""
+            echo "- 本番との比較：$result"
+            echo "- 公開する：$publish"
+            echo "- 署名し直す：$sign"
+            echo "- 版：$version"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 秘密鍵は、このステップの環境変数にだけ渡す（コマンドの引数やファイルには出さない）
+      - name: 署名する
+        if: steps.compare.outputs.publish == 'true' && steps.compare.outputs.sign == 'true'
+        env:
+          RULES_SIGNING_KEY: ${{ secrets.RULES_SIGNING_KEY }}
+        run: '"$RULESTOOL" sign --manifest build/out/v1/manifest.json --keys keys/trusted-public-keys.json'
+
+      - name: 検証する（rulestool）
+        if: steps.compare.outputs.publish == 'true'
+        run: '"$RULESTOOL" verify --dir build/out --keys keys/trusted-public-keys.json'
+
+      # CryptoKit とは別の実装（Node の crypto、OpenSSL）でも検証できることを確かめる
+      - name: 検証する（Node の crypto）
+        if: steps.compare.outputs.publish == 'true'
+        run: node .github/scripts/verify-manifest.mjs --dir build/out --keys keys/trusted-public-keys.json
+
+      # 本番の manifest が指しているリストも dist に置く（更新の途中の利用者が 404 にならないように）
+      - name: 配信するディレクトリを組み立てる
+        if: steps.compare.outputs.publish == 'true'
+        run: |
+          "$RULESTOOL" site --site site --rules build/out --out dist --keep-previous "https://$HOST/v1/manifest.json"
+          "$RULESTOOL" verify --dir dist --keys keys/trusted-public-keys.json
+          find dist -type f | sort
+
+      - name: wrangler を入れる
+        if: steps.compare.outputs.publish == 'true'
+        working-directory: deploy
+        run: npm ci --no-audit --no-fund
+
+      # デプロイの前に、版の名前をタグで確保する。公開に失敗して戻しても、同じ名前を使い直さないため
+      - name: 版の名前を確保する
+        if: steps.compare.outputs.publish == 'true' && steps.compare.outputs.sign == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="rules-$PUBLISHED_VERSION"
+          if gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$tag" -f "sha=$GITHUB_SHA" > /dev/null; then
+            echo "タグ $tag を作りました"
+          else
+            existing=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq .object.sha 2> /dev/null || true)
+            if [ "$existing" = "$GITHUB_SHA" ]; then
+              echo "タグ $tag は、このジョブの前の試行で作ったものです（やり直し）"
+            else
+              echo "::error::版 $PUBLISHED_VERSION のタグ（$tag）がすでにあります。build ジョブからやり直してください"
+              exit 1
+            fi
+          fi
+
+      - name: Cloudflare に公開する
+        if: steps.compare.outputs.publish == 'true'
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ./node_modules/.bin/wrangler deploy --config ../wrangler.jsonc --message "rules $PUBLISHED_VERSION"
+
+      # 公開した manifest が本番で見え、署名と各リストを検証でき、ページが開けることを確かめる。
+      # 反映に少し時間がかかることがあるので、何回か取り直す
+      - name: 本番を検証する
+        id: live-verify
+        if: steps.compare.outputs.publish == 'true'
+        run: |
+          check() {
+            curl --fail --silent --show-error --proto '=https' --header 'Cache-Control: no-cache' \
+              --output build/deployed-manifest.json "https://$HOST/v1/manifest.json" || return 1
+            if ! cmp -s build/deployed-manifest.json dist/v1/manifest.json; then
+              echo "本番の manifest が、まだ公開したものと違います"
+              return 1
+            fi
+            "$RULESTOOL" verify --base-url "https://$HOST/" --keys keys/trusted-public-keys.json || return 1
+            for page in / /privacy /terms /support /licenses /check; do
+              code=$(curl --silent --proto '=https' --output /dev/null --write-out '%{http_code}' "https://$HOST$page")
+              if [ "$code" != 200 ]; then
+                echo "$page が HTTP $code です"
+                return 1
+              fi
+            done
+          }
+          for attempt in 1 2 3 4 5 6; do
+            if check; then
+              echo "本番で検証できました（版 $PUBLISHED_VERSION）"
+              exit 0
+            fi
+            echo "まだ検証できません（$attempt 回目）。20 秒後に取り直します"
+            sleep 20
+          done
+          echo "::error::公開した版（$PUBLISHED_VERSION）を本番で検証できません"
+          exit 1
+
+      - name: 検証に失敗したら、前の版に戻す
+        if: failure() && steps.live-verify.outcome == 'failure'
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          ./node_modules/.bin/wrangler rollback --config ../wrangler.jsonc --yes \
+            --message "自動の巻き戻し：rules $PUBLISHED_VERSION を本番で検証できなかった"
+          echo "::error::公開した版を本番で検証できなかったため、前の版に戻しました。docs/runbook.md を参照"
+          echo "- **本番で検証できなかったため、前の版に戻しました**" >> "$GITHUB_STEP_SUMMARY"
+
+      # 公開した一式を保管する（wrangler rollback で戻せるのは直近 100 版まで。それより前にも戻せるように）
+      - name: GitHub Release に保管する
+        if: steps.compare.outputs.publish == 'true' && steps.compare.outputs.sign == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="rules-$PUBLISHED_VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::notice::Release $tag はすでにあります"
+            exit 0
+          fi
+          tar -czf "build/$tag.tar.gz" -C dist .
+          cp build/out/report.json "build/$tag-report.json"
+          {
+            echo "公開した一式（dist/）です。rollback.yml の release_tag にこのタグを指定すると、この版を公開し直せます。"
+            echo ""
+            # ルールのリストを配るので、ライセンスと権利表記を添える（CC BY-SA 3.0 の 4(a)・4(c)。docs/licensing.md）
+            echo "ルールのリスト（v1/lists/*.json）は CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）です。"
+            echo "EasyList（The EasyList authors, https://easylist.to/）を Safari のコンテンツブロッカーの形式に変換し、自作のルールと組み合わせたものです。詳しくは添付の NOTICE と LICENSE-rules を参照してください。"
+            echo ""
+            cat build/out/summary.md
+          } > build/release-notes.md
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "rules $PUBLISHED_VERSION" --notes-file build/release-notes.md \
+            "build/$tag.tar.gz" "build/$tag-report.json" NOTICE LICENSE-rules
+          echo "- GitHub Release：$tag" >> "$GITHUB_STEP_SUMMARY"
+
+  report-failure:
+    name: 失敗を issue で知らせる
+    needs: [build, deploy]
+    if: failure() && github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: issue を作る（同じ題の issue が開いていれば、コメントを足す）
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="週 1 回のルールの公開が失敗しました"
+          body=$(printf '%s\n' \
+            "週 1 回のルールの公開（publish.yml）が失敗しました。" \
+            "" \
+            "- 実行：$RUN_URL" \
+            "- 日時（UTC）：$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "" \
+            "実行のまとめ（Summary）で原因を確かめ、docs/runbook.md の手順で対応してください。" \
+            "件数の変化で止まった場合は、中身を確かめてから、publish.yml を手動で allow_count_change を付けて実行します。" \
+            "公開済みの版はそのまま配信されているので、アプリの利用者への影響はありません（ルールの更新が止まるだけです）。")
+          existing=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

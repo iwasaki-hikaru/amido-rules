@@ -1,0 +1,374 @@
+/*
+ * 配信サイトの共通スタイル。
+ * - 外部のフォントや画像は読み込まない（CSP で 'self' だけを許している）。
+ * - スマートフォンで読むことを前提にし、広い画面では本文の幅を抑える。
+ * - 色は端末の設定（ライト／ダーク）に合わせる。
+ * - クラス名に「ad」「banner」などを使わない。広告ブロックのルールで隠されてしまうため。
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f5f6f8;
+  --text: #1f2328;
+  --muted: #555e68;
+  --border: #d0d7de;
+  --link: #0a58ca;
+  --focus: #0a58ca;
+  --ok: #1a7f37;
+  --ok-bg: #e8f5ec;
+  --ng: #b42318;
+  --ng-bg: #fdecea;
+  --note-bg: #fff8e1;
+  --note-border: #e0b400;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --surface: #1b1f24;
+    --text: #e6e9ed;
+    --muted: #a4adb7;
+    --border: #3a4048;
+    --link: #79b8ff;
+    --focus: #79b8ff;
+    --ok: #56d364;
+    --ok-bg: #12301b;
+    --ng: #ff8a80;
+    --ng-bg: #3a1614;
+    --note-bg: #2b2410;
+    --note-border: #b38f00;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 1rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 0.2em;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* 本文へ移動するリンク（キーボード操作と読み上げのため。フォーカスしたときだけ見える） */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+  border: 2px solid var(--focus);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+.site-header,
+main,
+.site-footer {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-header {
+  padding-top: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.site-name {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.site-name a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+}
+
+.site-nav a {
+  display: inline-block;
+  padding: 0.35rem 0;
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+main {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  line-height: 1.4;
+  margin: 1rem 0 1rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  margin: 2.25rem 0 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 1.5rem 0 0.5rem;
+}
+
+p,
+ul,
+ol,
+dl {
+  margin: 0 0 1rem;
+}
+
+ul,
+ol {
+  padding-left: 1.5rem;
+}
+
+li + li {
+  margin-top: 0.25rem;
+}
+
+dt {
+  font-weight: 700;
+}
+
+dd {
+  margin: 0 0 0.75rem;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--surface);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+.lead {
+  font-size: 1.05rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* 補足や注意の枠 */
+.note {
+  background: var(--note-bg);
+  border-left: 4px solid var(--note-border);
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.note > :last-child {
+  margin-bottom: 0;
+}
+
+/* できること・できないことの一覧 */
+.can-list,
+.cannot-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.can-list li,
+.cannot-list li {
+  position: relative;
+  padding-left: 1.6rem;
+}
+
+.can-list li::before,
+.cannot-list li::before {
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.can-list li::before {
+  content: "○";
+  color: var(--ok);
+}
+
+.cannot-list li::before {
+  content: "×";
+  color: var(--ng);
+}
+
+/* ページ一覧（トップページ） */
+.page-list {
+  list-style: none;
+  padding: 0;
+}
+
+.page-list li + li {
+  margin-top: 0.75rem;
+}
+
+.page-list a {
+  font-weight: 700;
+}
+
+.page-list p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* よくある質問 */
+.faq dt {
+  margin-top: 1.25rem;
+}
+
+.faq dd {
+  margin-left: 0;
+}
+
+/* 動作確認ページ */
+.check-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0 0 1rem;
+}
+
+.check-item h2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.check-status {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.result {
+  display: inline-block;
+  min-width: 4.5em;
+  padding: 0.1rem 0.75rem;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  font-weight: 700;
+  text-align: center;
+}
+
+.result-on {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.result-off {
+  color: var(--ng);
+  background: var(--ng-bg);
+  border-color: var(--ng);
+}
+
+/*
+ * 判定に使う枠。ルールが効いていれば、Safari がこの枠を消す（display: none）。
+ * ここでは display を指定するだけで、!important は使わない。
+ */
+.check-target {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--muted);
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 0 0 0.75rem;
+}
+
+.check-actions {
+  margin: 1.5rem 0;
+}
+
+button {
+  font: inherit;
+  color: var(--bg);
+  background: var(--link);
+  border: 0;
+  border-radius: 10px;
+  padding: 0.6rem 1.25rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.site-footer {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.site-footer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+@media (min-width: 40rem) {
+  body {
+    font-size: 1.0625rem;
+  }
+
+  h1 {
+    font-size: 1.9rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

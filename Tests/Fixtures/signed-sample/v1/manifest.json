@@ -1,0 +1,22 @@
+{
+  "lists" : [
+    {
+      "category" : "basic",
+      "rule_count" : 2,
+      "sha256" : "5926020cf8800576e72f9a513b097424e5b18836b4d92cbf7f97da2356d68bc0",
+      "size" : 209,
+      "url" : "lists/basic.5926020c.json"
+    },
+    {
+      "category" : "annoyance",
+      "rule_count" : 1,
+      "sha256" : "49ee21a5dee1b8e883f609e15e3ddcbc145bec55ee3735825cc0be9ffdf2d5c7",
+      "size" : 127,
+      "url" : "lists/annoyance.49ee21a5.json"
+    }
+  ],
+  "min_app_build" : 1,
+  "published_at" : "2026-01-01T00:00:00Z",
+  "schema" : 1,
+  "version" : "2026.01.01.1"
+}

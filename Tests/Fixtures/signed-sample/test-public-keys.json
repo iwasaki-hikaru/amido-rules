@@ -1,0 +1,9 @@
+{
+  "comment" : "テスト専用：RFC 8032 TEST 1 の公開鍵。秘密鍵が公開されているので、本番では絶対に信頼しない",
+  "keys" : [
+    {
+      "id" : "rfc8032-test1",
+      "publicKey" : "11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo="
+    }
+  ]
+}

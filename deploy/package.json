@@ -1,0 +1,12 @@
+{
+  "name": "safari-blocker-rules-deploy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "配信サイトを Cloudflare Workers に公開するための wrangler（版を固定する。CI では npm ci で入れる）",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "wrangler": "4.143.0"
+  }
+}

@@ -1,0 +1,12 @@
+# ビルドとツール
+.build/
+.swiftpm/
+.tools/
+build/
+dist/
+deploy/node_modules/
+
+# 手元だけの鍵（開発用）。本番の秘密鍵はどこにも置かない（GitHub Secrets だけ）
+.local/
+
+.DS_Store

@@ -1,0 +1,28 @@
+# Cloudflare Workers の静的アセットに付けるヘッダー。
+# 書式：URL のパターンの行のあとに、字下げして「名前: 値」を書く（# で始まる行はコメント）。
+# 制限：ルールは 100 件まで、1 行は 2,000 文字まで（CI の check-config.mjs で確かめている）。
+# ここで指定したヘッダーは、Cloudflare が通常付けるもの（Content-Type・Cache-Control など）を上書きする。
+# 見つからないページ（404）の応答にも、URL が合えば同じヘッダーが付く。
+
+# すべての URL。外部への通信を一切させない（フォント・解析・CDN を使わない）。
+# JSON にも付くが、害はない。
+/*
+  Content-Security-Policy: default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+
+# manifest と署名は、短い時間（5 分）だけキャッシュさせる。
+# アプリは端末のキャッシュを使わず、ETag で確かめ直す。
+/v1/manifest.json
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=300
+
+# .sig は既定では application/pgp-signature になるので、テキストとして返す（中身は Base64 の 1 行）。
+/v1/manifest.json.sig
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=300
+
+# ルールのリストは、ファイル名に中身のハッシュが入っていて、同じ名前で中身が変わることはない。
+/v1/lists/*
+  Content-Type: application/json; charset=utf-8
+  Cache-Control: public, max-age=31536000, immutable

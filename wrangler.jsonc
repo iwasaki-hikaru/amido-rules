@@ -1,0 +1,27 @@
+// Cloudflare Workers の設定。静的アセット（dist/）だけを配信する。
+//
+// 無料プランで無料・回数の上限なしのまま使うための決まり（CI の .github/scripts/check-config.mjs で確かめている）：
+// - Worker のコード（main）、アセットより先に Worker を動かす設定（run_worker_first）、
+//   キャッシュの設定（cache）は入れない。入れると、すべてのリクエストが Worker の実行として数えられ、
+//   1 日 10 万リクエストを超えると Error 1027 で失敗する。
+// - 1 ファイルは 25 MiB まで、1 つの版につき 2 万ファイルまで。_headers は 100 ルールまで。
+// - name は config/distribution.json の host の先頭（<name>.<サブドメイン>.workers.dev）と同じにする。
+//   host はアプリに埋め込むので、公開したあとは name もサブドメインも変えない。
+{
+  "name": "PLACEHOLDER-worker",
+  "compatibility_date": "2026-09-01",
+  // workers.dev で公開する。版ごとのプレビュー URL は出さない（公開前の版が見えないように）
+  "workers_dev": true,
+  "preview_urls": false,
+  // アクセスの記録（Workers Logs）は使わない。プライバシーポリシーの記載と合わせている
+  "observability": {
+    "enabled": false
+  },
+  "assets": {
+    "directory": "./dist",
+    // privacy.html を /privacy で（リダイレクトなしで）返す
+    "html_handling": "auto-trailing-slash",
+    // 見つからないときは 404.html を 404 で返す
+    "not_found_handling": "404-page"
+  }
+}

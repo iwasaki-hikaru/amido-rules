@@ -1,0 +1,289 @@
+#!/usr/bin/env node
+// 配信の設定を検査する（Node の標準機能だけを使う）。
+//
+// 1. wrangler.jsonc：静的アセットだけの Worker になっているか
+//    （main・cache・run_worker_first があると、無料プランでもリクエストが課金の対象になる）
+// 2. site/_headers：Cloudflare の制限（100 ルール・1 行 2,000 文字）に収まり、必要なルールがあるか
+// 3. site/*.html：外部の読み込みや、CSP で止められる書き方（インラインのスクリプト・style 属性など）がないか
+// 4. deploy/：wrangler の版が固定されていて、package-lock.json と合っているか
+//
+// 使い方：node .github/scripts/check-config.mjs（リポジトリのルートで実行する）
+// 終了コード：0 = 問題なし、1 = 問題あり
+
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+const inActions = process.env.GITHUB_ACTIONS === "true";
+let failures = 0;
+
+function error(file, message) {
+  failures += 1;
+  if (inActions) {
+    console.log(`::error file=${file}::${message}`);
+  } else {
+    console.error(`✘ ${file}：${message}`);
+  }
+}
+
+function notice(message) {
+  console.log(inActions ? `::notice::${message}` : `・${message}`);
+}
+
+// その検査の中で問題がなかったときだけ、確認できたことを表示する
+function ok(before, message) {
+  if (failures === before) {
+    console.log(`✔ ${message}`);
+  }
+}
+
+// JSONC（コメントと末尾のカンマ）を JSON にする。文字列の中の「//」は残す。
+function stripJsonc(text) {
+  let out = "";
+  let inString = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    const next = text[i + 1];
+    if (inString) {
+      out += c;
+      if (c === "\\") {
+        out += next ?? "";
+        i += 1;
+      } else if (c === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inString = true;
+      out += c;
+    } else if (c === "/" && next === "/") {
+      while (i < text.length && text[i] !== "\n") i += 1;
+      out += "\n";
+    } else if (c === "/" && next === "*") {
+      i += 2;
+      while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i += 1;
+      i += 1;
+    } else {
+      out += c;
+    }
+  }
+  return out.replace(/,(\s*[}\]])/g, "$1");
+}
+
+function findKeys(value, names, path = "") {
+  const found = [];
+  if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      const childPath = path ? `${path}.${key}` : key;
+      if (names.includes(key)) found.push(childPath);
+      found.push(...findKeys(child, names, childPath));
+    }
+  }
+  return found;
+}
+
+// --- 1. wrangler.jsonc ---
+function checkWrangler() {
+  const before = failures;
+  const file = "wrangler.jsonc";
+  let config;
+  try {
+    config = JSON.parse(stripJsonc(readFileSync(file, "utf8")));
+  } catch (e) {
+    error(file, `読めません（${e.message}）`);
+    return;
+  }
+  const forbidden = findKeys(config, ["main", "cache", "run_worker_first"]);
+  if (forbidden.length > 0) {
+    error(file, `静的アセットだけにするため、次のキーは使えません：${forbidden.join(", ")}`);
+  }
+  const expect = [
+    ["workers_dev", config.workers_dev, true],
+    ["preview_urls", config.preview_urls, false],
+    ["assets.directory", config.assets?.directory, "./dist"],
+    ["assets.html_handling", config.assets?.html_handling, "auto-trailing-slash"],
+    ["assets.not_found_handling", config.assets?.not_found_handling, "404-page"],
+  ];
+  for (const [name, actual, expected] of expect) {
+    if (actual !== expected) {
+      error(file, `${name} は ${JSON.stringify(expected)} にしてください（今は ${JSON.stringify(actual)}）`);
+    }
+  }
+  if (typeof config.compatibility_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(config.compatibility_date)) {
+    error(file, "compatibility_date（YYYY-MM-DD）がありません");
+  }
+
+  // name は、配信ホスト（<name>.<サブドメイン>.workers.dev）の先頭と同じでなければならない
+  let host;
+  try {
+    host = JSON.parse(readFileSync("config/distribution.json", "utf8")).host;
+  } catch (e) {
+    error("config/distribution.json", `読めません（${e.message}）`);
+    return;
+  }
+  const labels = typeof host === "string" ? host.split(".") : [];
+  if (labels.length !== 4 || labels[2] !== "workers" || labels[3] !== "dev") {
+    error("config/distribution.json", `host は <Worker 名>.<サブドメイン>.workers.dev の形にしてください（今は ${host}）`);
+  } else if (config.name !== labels[0]) {
+    error(file, `name（${config.name}）が、config/distribution.json の host の先頭（${labels[0]}）と違います`);
+  }
+  if (typeof host === "string" && host.includes("PLACEHOLDER")) {
+    notice(`配信ホストが仮の値です（${host}）。公開する前に config/distribution.json と wrangler.jsonc の name を本物にしてください`);
+  }
+  ok(before, `${file}：静的アセットだけの設定です`);
+}
+
+// --- 2. site/_headers ---
+// Cloudflare の解析と同じく、「/」か「https://」で始まる行を URL のパターンとして数える。
+function checkHeaders() {
+  const before = failures;
+  const file = "site/_headers";
+  if (!existsSync(file)) {
+    error(file, "ありません");
+    return;
+  }
+  const lines = readFileSync(file, "utf8").split("\n");
+  const rules = [];
+  let current;
+  lines.forEach((raw, index) => {
+    const line = raw.trim();
+    if (line.length === 0 || line.startsWith("#")) return;
+    if (line.length > 2000) {
+      error(file, `${index + 1} 行目が 2,000 文字を超えています`);
+      return;
+    }
+    if (/^([^\s]+:\/\/|\/)/.test(line)) {
+      if ((line.match(/\*/g) ?? []).length > 1) {
+        error(file, `${index + 1} 行目：* は 1 つしか使えません`);
+      }
+      current = { path: line, headers: {} };
+      rules.push(current);
+      return;
+    }
+    if (!current) {
+      error(file, `${index + 1} 行目：URL のパターンより前にヘッダーがあります`);
+      return;
+    }
+    const at = line.indexOf(":");
+    if (at <= 0) {
+      error(file, `${index + 1} 行目：「名前: 値」の形ではありません`);
+      return;
+    }
+    current.headers[line.slice(0, at).trim().toLowerCase()] = line.slice(at + 1).trim();
+  });
+  if (rules.length > 100) {
+    error(file, `ルールが ${rules.length} 件あります（上限は 100 件）`);
+  }
+  for (const rule of rules) {
+    if (Object.keys(rule.headers).length === 0) {
+      error(file, `${rule.path} にヘッダーがありません`);
+    }
+  }
+  const byPath = Object.fromEntries(rules.map((rule) => [rule.path, rule.headers]));
+  const required = [
+    ["/*", "content-security-policy", /default-src 'none'/],
+    ["/*", "x-content-type-options", /^nosniff$/],
+    ["/v1/manifest.json", "cache-control", /max-age=300\b/],
+    ["/v1/manifest.json.sig", "content-type", /^text\/plain/],
+    ["/v1/manifest.json.sig", "cache-control", /max-age=300\b/],
+    ["/v1/lists/*", "cache-control", /immutable/],
+  ];
+  for (const [path, name, pattern] of required) {
+    const value = byPath[path]?.[name];
+    if (value === undefined || !pattern.test(value)) {
+      error(file, `${path} に ${name}（${pattern}）が必要です`);
+    }
+  }
+  ok(before, `${file}：${rules.length} ルール`);
+}
+
+// --- 3. site/*.html ---
+// CSP（default-src 'none'; script-src 'self'; style-src 'self'）の下で動く書き方になっているか。
+function checkHtml() {
+  const before = failures;
+  if (existsSync("site/v1")) {
+    error("site/v1", "v1/ はツールが作るので、site/ には置かないでください");
+  }
+  const pages = readdirSync("site").filter((name) => name.endsWith(".html"));
+  for (const required of ["index.html", "privacy.html", "terms.html", "support.html", "licenses.html", "check.html", "404.html"]) {
+    if (!pages.includes(required)) error(`site/${required}`, "ありません");
+  }
+  let placeholders = 0;
+  for (const name of pages) {
+    const file = `site/${name}`;
+    const html = readFileSync(file, "utf8");
+    const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "");
+    placeholders += (withoutComments.match(/【要記入/g) ?? []).length;
+
+    if (!/<html lang="ja">/.test(withoutComments)) error(file, '<html lang="ja"> にしてください');
+    for (const match of withoutComments.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      const src = /\bsrc="([^"]*)"/.exec(match[1])?.[1];
+      if (!src) {
+        error(file, "インラインの <script> は CSP で止められます。assets/ の別ファイルにしてください");
+      } else if (!src.startsWith("/") || src.startsWith("//")) {
+        error(file, `スクリプトは同じサイトの絶対パス（/assets/…）で読み込んでください：${src}`);
+      } else if (!existsSync(join("site", src))) {
+        error(file, `${src} がありません`);
+      }
+    }
+    if (/<style\b/i.test(withoutComments)) error(file, "<style> は CSP で止められます。assets/site.css に書いてください");
+    if (/\sstyle\s*=/i.test(withoutComments)) error(file, "style 属性は CSP で止められます。クラスを使ってください");
+    if (/\son[a-z]+\s*=/i.test(withoutComments)) error(file, "onclick などの属性は CSP で止められます。assets/ のスクリプトで登録してください");
+    if (/<(iframe|form|object|embed)\b/i.test(withoutComments)) error(file, "iframe・form・object・embed は使わないでください");
+    for (const match of withoutComments.matchAll(/<(link|img|source|video|audio)\b[^>]*\b(href|src|srcset)="([^"]*)"/gi)) {
+      const url = match[3];
+      if (!url.startsWith("/") || url.startsWith("//")) {
+        error(file, `外部や相対パスの読み込みはできません（同じサイトの /… にしてください）：${url}`);
+      } else if (!existsSync(join("site", url.split("?")[0]))) {
+        error(file, `${url} がありません`);
+      }
+    }
+  }
+  const check = readFileSync("site/check.html", "utf8");
+  for (const category of ["basic", "annoyance"]) {
+    const pattern = new RegExp(`id="cb-check-${category}"[^>]*class="[^"]*\\bcb-check-${category}\\b`);
+    if (!pattern.test(check)) {
+      error("site/check.html", `id と class が cb-check-${category} の枠が必要です（配信するルールがこの枠を隠す）`);
+    }
+  }
+  if (placeholders > 0) {
+    notice(`site/ に「【要記入】」が ${placeholders} か所あります。公開前に埋めてください`);
+  }
+  ok(before, `site/：${pages.length} ページ`);
+}
+
+// --- 4. deploy/ ---
+function checkDeploy() {
+  const before = failures;
+  const file = "deploy/package.json";
+  let pkg;
+  let lock;
+  try {
+    pkg = JSON.parse(readFileSync(file, "utf8"));
+    lock = JSON.parse(readFileSync("deploy/package-lock.json", "utf8"));
+  } catch (e) {
+    error(file, `読めません（${e.message}）`);
+    return;
+  }
+  const wanted = pkg.devDependencies?.wrangler ?? pkg.dependencies?.wrangler;
+  if (typeof wanted !== "string" || !/^\d+\.\d+\.\d+$/.test(wanted)) {
+    error(file, `wrangler の版は完全に固定してください（例 "4.143.0"。今は ${JSON.stringify(wanted)}）`);
+    return;
+  }
+  const locked = lock.packages?.["node_modules/wrangler"]?.version;
+  if (locked !== wanted) {
+    error("deploy/package-lock.json", `wrangler の版（${locked}）が package.json（${wanted}）と違います。npm install --package-lock-only で作り直してください`);
+    return;
+  }
+  ok(before, `deploy/：wrangler ${wanted}`);
+}
+
+checkWrangler();
+checkHeaders();
+checkHtml();
+checkDeploy();
+
+if (failures > 0) {
+  console.error(`問題が ${failures} 件あります`);
+  process.exit(1);
+}

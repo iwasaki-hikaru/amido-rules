@@ -1,0 +1,13 @@
+! 自作ルール：basic・無料
+!
+! 書式：AdGuard / Adblock Plus の形式。
+! 決まり：各ルールのすぐ上に、根拠を「! 根拠: <確認した URL> (<YYYY-MM-DD>)」の形で書く。
+!   根拠のないルールがあると、ツールが失敗します。
+!   ライセンス上使えないリスト（280blocker など）から写さないこと。
+! ライセンス：CC BY-SA 3.0（LICENSE-rules を参照）
+!
+! 動作確認ページ（/check）用のルールは、ツールが自動で足すので、ここには書かない。
+!
+! 例：
+! ! 根拠: https://example.jp/article/123 (2026-10-01)
+! example.jp##.ad-banner

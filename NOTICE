@@ -1,0 +1,83 @@
+【要記入：アプリ名】 ブロックのルール ― 権利表記
+==============================================
+
+このリポジトリと、配信サイト（https://【要記入：配信ホスト】/v1/）・GitHub Release で配る
+ブロックのルールには、次の著作物が含まれます。ルールのライセンスは LICENSE-rules を参照してください。
+
+
+EasyList
+--------
+著作者    The EasyList authors (https://easylist.to/)
+題名      EasyList
+元の場所  https://easylist.to/easylist/easylist.txt
+ライセンス  GNU GPL 第 3 版以降と、CC BY-SA 3.0 Unported 以降のデュアルライセンス
+            （https://easylist.to/pages/licence.html）。
+            ここでは CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）を選んで使っています。
+変更      - AdGuard SafariConverterLib v4.3.0（コミット 7a2e93f0afa70479cc59985f332025236c3f0c39）で、
+            Safari のコンテンツブロッカーの形式（JSON）に変換しました。
+          - 変換の前に、先頭の「[Adblock Plus 2.0]」の行を取り除いています。
+          - 変換できなかったルールと、Safari で使えないルールは含まれません。
+          - 自作のルールと組み合わせています（basic のカテゴリ）。
+          変換後のリストは、上流の更新に合わせて作り直します。どの版の EasyList から作ったかは、
+          公開のたびの report.json（GitHub Actions の実行と GitHub Release に添付）に記録しています。
+
+
+自作のルール
+------------
+著作者    safari-blocker rules contributors
+場所      custom/*.txt、および rulestool が動作確認のページ用に足すルール
+ライセンス  CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）
+
+
+変換に使うツール（配布しないもの）
+----------------------------------
+AdGuard SafariConverterLib
+  https://github.com/AdguardTeam/SafariConverterLib
+  ライセンス：GNU General Public License 第 3 版（GPLv3）
+  ルールを変換するために、CI の中で別のプログラムとして実行するだけです。
+  このリポジトリのツールにはリンクしておらず、アプリにも配信サイトにも含めていません。
+  ビルドのときに取得する依存パッケージ（PunycodeSwift、swift-argument-parser、swift-psl）も、配布しません。
+
+
+このリポジトリのツール
+----------------------
+ルール以外のファイル（Sources/、Tests/、scripts/、.github/、site/ など）のライセンスは未定です。
+【要記入：決めたら記載】
+
+
+----------------------------------------------------------------------
+English
+----------------------------------------------------------------------
+
+The blocking rules distributed from this repository, from the distribution
+site (https://【要記入：配信ホスト】/v1/) and in GitHub Releases include the
+following works. See LICENSE-rules for the license of the rules.
+
+EasyList
+  Authors:  The EasyList authors (https://easylist.to/)
+  Title:    EasyList
+  Source:   https://easylist.to/easylist/easylist.txt
+  License:  Dual licensed under the GNU GPL version 3 or later and
+            CC BY-SA 3.0 Unported or later
+            (https://easylist.to/pages/licence.html).
+            Used here under CC BY-SA 3.0
+            (https://creativecommons.org/licenses/by-sa/3.0/).
+  Changes:  - Converted to the Safari content blocker format (JSON) with
+              AdGuard SafariConverterLib v4.3.0
+              (commit 7a2e93f0afa70479cc59985f332025236c3f0c39).
+            - The "[Adblock Plus 2.0]" header line is removed before conversion.
+            - Rules that could not be converted, and rules that Safari cannot
+              use, are not included.
+            - Combined with the custom rules (basic category).
+
+Custom rules
+  Authors:  safari-blocker rules contributors
+  License:  CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+
+AdGuard SafariConverterLib (GPLv3, https://github.com/AdguardTeam/SafariConverterLib)
+  is only run as a separate program in CI to convert the rules. It is not
+  linked into the tools in this repository and is not distributed with the
+  app or the distribution site.
+
+The license of the tools in this repository (everything other than the
+rules) has not been decided yet.

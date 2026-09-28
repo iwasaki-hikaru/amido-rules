@@ -1,0 +1,67 @@
+ブロックのルールのライセンス
+==========================
+
+対象
+----
+- custom/ の自作ルール（custom/*.txt）
+- rulestool が作り、配信サイトの /v1/lists/ と GitHub Release で配る、変換後のルールのリスト（*.json）
+- rulestool が動作確認のページ用に自動で足すルール
+
+ライセンス
+----------
+クリエイティブ・コモンズ 表示 - 継承 3.0 非移植（CC BY-SA 3.0）
+  https://creativecommons.org/licenses/by-sa/3.0/
+  法的な全文：https://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+このライセンスが与える権利を狭める条件は、付け加えません。
+
+元の作品と変更
+--------------
+変換後のルールのリストは、EasyList を変換して変更したもの（翻案）です。
+
+- EasyList の著作者：The EasyList authors (https://easylist.to/)
+- EasyList のライセンス：GNU GPL 第 3 版以降と、CC BY-SA 3.0 以降のデュアルライセンス
+  （https://easylist.to/pages/licence.html）。ここでは CC BY-SA 3.0 を選んでいます。
+- 変更：AdGuard SafariConverterLib で Safari のコンテンツブロッカーの形式（JSON）に変換し、
+  Safari で使えないルールを除き、自作のルールと組み合わせています。
+
+詳しい権利表記は NOTICE を参照してください。
+
+対象外
+------
+上に挙げたもの以外（ツールのコード、スクリプト、ワークフロー、サイトのページ、ドキュメントなど）には、
+このライセンスは適用されません。それらのライセンスは未定です。
+
+
+----------------------------------------------------------------------
+English
+----------------------------------------------------------------------
+
+License for the blocking rules
+
+Scope:
+- The custom rules in custom/ (custom/*.txt)
+- The converted rule lists (*.json) built by rulestool and distributed
+  under /v1/lists/ on the distribution site and in GitHub Releases
+- The check-page rules that rulestool adds automatically
+
+License: Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+  https://creativecommons.org/licenses/by-sa/3.0/
+  Legal code: https://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+No additional terms that restrict the rights granted by this license are imposed.
+
+The converted rule lists are an adaptation of EasyList.
+- Authors: The EasyList authors (https://easylist.to/)
+- EasyList is dual licensed under the GNU GPL version 3 or later and
+  CC BY-SA 3.0 or later (https://easylist.to/pages/licence.html).
+  It is used here under CC BY-SA 3.0.
+- Changes: converted to the Safari content blocker format (JSON) with
+  AdGuard SafariConverterLib, rules that Safari cannot use were removed,
+  and the result was combined with the custom rules.
+
+See NOTICE for full attribution.
+
+Everything else in this repository (tool code, scripts, workflows, site
+pages, documentation) is not covered by this license. Its license has not
+been decided yet.

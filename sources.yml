@@ -1,0 +1,38 @@
+# 上流のリストと自作ルール。書式は docs/format.md の「sources.yml」を参照（YAML の一部だけを使う）。
+# ライセンスが不明なリストや、280blocker のフィルタは入れない（要件 §0.7）。
+sources:
+  - name: EasyList
+    url: https://easylist.to/easylist/easylist.txt
+    license: CC-BY-SA-3.0
+    attribution: The EasyList authors (https://easylist.to/)
+    category: basic
+    enabled: true
+
+  - name: 自作ルール（basic）
+    path: custom/basic.txt
+    license: CC-BY-SA-3.0
+    attribution: safari-blocker rules contributors
+    category: basic
+    enabled: true
+
+  - name: 自作ルール（annoyance）
+    path: custom/annoyance.txt
+    license: CC-BY-SA-3.0
+    attribution: safari-blocker rules contributors
+    category: annoyance
+    enabled: true
+
+  - name: 自作ルール（scam）
+    path: custom/scam.txt
+    license: CC-BY-SA-3.0
+    attribution: safari-blocker rules contributors
+    category: scam
+    enabled: true
+
+  # GPLv3。ライセンスを確認するまで使わない（要件 §5.1）
+  - name: AdGuard Japanese filter
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
+    license: GPL-3.0
+    attribution: AdGuard (https://github.com/AdguardTeam/AdguardFilters)
+    category: basic
+    enabled: false

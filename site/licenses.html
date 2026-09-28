@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+  運営者へ：
+  - 変換後のルールのライセンス（CC BY-SA 3.0 のままにするか 4.0 にするか）は未決定です。判断材料は rules リポジトリの docs/licensing.md にあります。
+    決めたら、このページ・LICENSE-rules・NOTICE・アプリのライセンス画面を合わせて直してください。
+  - sources.yml で上流のリストを増やしたら、このページにも同じ形で足してください。
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ライセンス｜【要記入：アプリ名】</title>
+<link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<header class="site-header">
+  <p class="site-name"><a href="/">【要記入：アプリ名】</a></p>
+  <nav class="site-nav" aria-label="サイト内のページ">
+    <ul>
+      <li><a href="/support">サポート</a></li>
+      <li><a href="/check">動作確認</a></li>
+      <li><a href="/privacy">プライバシー</a></li>
+      <li><a href="/terms">利用規約</a></li>
+      <li><a href="/licenses" aria-current="page">ライセンス</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <h1>ライセンス</h1>
+  <p class="lead">このサイトで配信しているブロックのルールと、ルールを作るために使っているツールの権利表記です。</p>
+
+  <h2 id="rules">配信しているブロックのルール</h2>
+  <p>このサイトの <code>/v1/</code> 以下で配信しているルール（JSON）は、次のリストと自作のルールを、Safari のコンテンツブロッカーの形式に変換し、組み合わせたものです。変換の際、Safari で使えない書き方のルールは除いています。つまり、元のリストに変更を加えたもの（翻案）です。</p>
+  <p>配信しているルールは、<a href="https://creativecommons.org/licenses/by-sa/3.0/">クリエイティブ・コモンズ 表示 - 継承 3.0 非移植（CC BY-SA 3.0）</a>で利用できます。</p>
+  <p>ルールの作り方と、変換前・変換後の中身は、【要記入：rules リポジトリの URL】で公開しています。</p>
+
+  <h3 id="easylist">EasyList</h3>
+  <dl>
+    <dt>著作者</dt>
+    <dd>The EasyList authors (<a href="https://easylist.to/">https://easylist.to/</a>)</dd>
+    <dt>元のリスト</dt>
+    <dd><a href="https://easylist.to/easylist/easylist.txt">https://easylist.to/easylist/easylist.txt</a></dd>
+    <dt>ライセンス</dt>
+    <dd>EasyList は、GNU GPL 第 3 版以降と、CC BY-SA 3.0 以降のデュアルライセンスです（<a href="https://easylist.to/pages/licence.html">EasyList のライセンス</a>）。ここでは <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a> で利用しています。</dd>
+    <dt>変更</dt>
+    <dd>AdGuard SafariConverterLib で Safari のコンテンツブロッカーの形式に変換し、Safari で使えないルールを除き、自作のルールと組み合わせています。</dd>
+  </dl>
+
+  <h3 id="custom">自作のルール</h3>
+  <dl>
+    <dt>著作者</dt>
+    <dd>safari-blocker rules contributors</dd>
+    <dt>ライセンス</dt>
+    <dd><a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a></dd>
+    <dt>備考</dt>
+    <dd>動作確認のページ用のルール（このサイトの確認用の枠を隠すもの）も含みます。</dd>
+  </dl>
+
+  <h2 id="tools">ルールを作るためのツール</h2>
+
+  <h3 id="converter">AdGuard SafariConverterLib</h3>
+  <dl>
+    <dt>入手元</dt>
+    <dd><a href="https://github.com/AdguardTeam/SafariConverterLib">https://github.com/AdguardTeam/SafariConverterLib</a></dd>
+    <dt>ライセンス</dt>
+    <dd><a href="https://www.gnu.org/licenses/gpl-3.0.html">GNU General Public License 第 3 版（GPLv3）</a></dd>
+    <dt>使い方</dt>
+    <dd>ルールを変換するために、公開の手順（CI）の中で、別のプログラムとして実行しているだけです。アプリにもこのサイトにも含めておらず、配布していません。</dd>
+  </dl>
+
+  <h3 id="rulestool">rulestool（ルールの取得・検査・署名のツール）</h3>
+  <dl>
+    <dt>入手元</dt>
+    <dd>【要記入：rules リポジトリの URL】</dd>
+    <dt>ライセンス</dt>
+    <dd>【要記入：未定】</dd>
+  </dl>
+
+  <h2 id="site">このサイト</h2>
+  <p>このサイトのページ（文章、スタイル、スクリプト）の権利は、運営者にあります。【要記入：ライセンスを付ける場合は記載】</p>
+</main>
+
+<footer class="site-footer">
+  <p>© 【要記入：年と名義】</p>
+</footer>
+</body>
+</html>

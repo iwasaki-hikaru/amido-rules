@@ -1,0 +1,78 @@
+<!doctype html>
+<!--
+  運営者へ：
+  - 配信しているルールには、ツールが自動で「<配信ホスト>##.cb-check-basic」と「<配信ホスト>##.cb-check-annoyance」を 1 件ずつ入れます。
+    枠のクラス名（cb-check-basic・cb-check-annoyance）を変えるときは、rules のツールも合わせて直してください。
+  - 判定は assets/check.js で行います（CSP でインラインのスクリプトを禁止しているため、別のファイルにしている）。
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>動作確認｜【要記入：アプリ名】</title>
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/check.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">本文へ移動</a>
+<header class="site-header">
+  <p class="site-name"><a href="/">【要記入：アプリ名】</a></p>
+  <nav class="site-nav" aria-label="サイト内のページ">
+    <ul>
+      <li><a href="/support">サポート</a></li>
+      <li><a href="/check" aria-current="page">動作確認</a></li>
+      <li><a href="/privacy">プライバシー</a></li>
+      <li><a href="/terms">利用規約</a></li>
+      <li><a href="/licenses">ライセンス</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="main">
+  <h1>動作確認</h1>
+  <p class="lead">広告ブロックが働いているかを、このページで確かめられます。Safari で開いてください。</p>
+
+  <noscript>
+    <div class="note">
+      <p>このページの判定には JavaScript を使います。JavaScript がオフのときは、下の枠が見えるかどうかで確かめてください。枠が見えなければ、そのブロックは働いています。</p>
+    </div>
+  </noscript>
+
+  <section class="check-item" aria-labelledby="basic-heading">
+    <h2 id="basic-heading">基本（無料）</h2>
+    <p class="check-status">結果：<strong id="result-basic" class="result" aria-live="polite">確認中…</strong></p>
+    <div id="cb-check-basic" class="cb-check-basic check-target">この枠が見えている場合、基本のブロックは働いていません。</div>
+    <p class="muted">「【要記入：アプリ名】 基本」の拡張がオンになっていれば、「有効」と表示されます。</p>
+  </section>
+
+  <section class="check-item" aria-labelledby="annoyance-heading">
+    <h2 id="annoyance-heading">プラス（プレミアム）</h2>
+    <p class="check-status">結果：<strong id="result-annoyance" class="result" aria-live="polite">確認中…</strong></p>
+    <div id="cb-check-annoyance" class="cb-check-annoyance check-target">この枠が見えている場合、プラスのブロックは働いていません。</div>
+    <p class="muted"><strong>無料版では「無効」と表示されるのが正常です。</strong>プレミアムを購入していて、「【要記入：アプリ名】 プラス」の拡張がオンになっていれば、「有効」と表示されます。</p>
+  </section>
+
+  <p class="check-actions">
+    <button type="button" id="check-reload" hidden>再読み込みして、もう一度確かめる</button>
+  </p>
+
+  <h2 id="troubleshooting">「無効」と表示されるとき</h2>
+  <ul>
+    <li><strong>Safari で開いていますか。</strong>このページで判定できるのは、Safari と、アプリの中で開く Safari の画面（SFSafariViewController）だけです。他のブラウザや、多くのアプリの中のブラウザでは、いつも「無効」になります。</li>
+    <li><strong>設定で拡張をオンにしましたか。</strong>手順は<a href="/support#setup">設定のしかた</a>をご覧ください。Safari のプロファイルを使っている場合は、今のプロファイルでオンになっているかも確かめてください。</li>
+    <li><strong>オンにしたあと、このページを再読み込みしましたか。</strong>設定を変えたあとは、ページを読み込み直すと反映されます。</li>
+    <li><strong>このページで「コンテンツブロッカーをオフにする」を使っていませんか。</strong>Safari のページメニューからオフにしていると、「無効」になります。</li>
+    <li><strong>アプリのホーム画面に、エラーが出ていませんか。</strong>ルールの反映に失敗していると、表示されます。</li>
+  </ul>
+
+  <h2 id="about">このページについて</h2>
+  <p>配信しているルールには、このページの 2 つの枠を隠すルールが 1 件ずつ入っています。枠が隠れていれば「有効」と表示します。</p>
+  <p>判定は、お使いの端末の Safari の中だけで行います。このページは外部と通信せず、結果をどこにも送りません。</p>
+</main>
+
+<footer class="site-footer">
+  <p>© 【要記入：年と名義】</p>
+</footer>
+</body>
+</html>
