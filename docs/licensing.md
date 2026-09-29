@@ -110,13 +110,13 @@
 - AdGuard の資料では、ID 7、日本語向けの推奨リスト、「Fanboy's Japanese filter を元にした」とされています。［確認済］ https://adguard.com/kb/general/ad-filtering/adguard-filters/
 - ソースは AdguardTeam/AdguardFilters リポジトリにあり、その LICENSE は GPLv3 です。［確認済］ https://github.com/AdguardTeam/AdguardFilters
   - 配布用の FiltersRegistry リポジトリは LGPL-3.0 です。［確認済］ https://github.com/AdguardTeam/FiltersRegistry
-  - FilterLists.com は、このリストを CC BY-SA 3.0 と記録していて、リポジトリの LICENSE と食い違っています。［二次情報］ https://filterlists.com/
-  - リストの先頭の行は AdguardFilters の LICENSE を指している、という検索結果の要約がありますが、直接は読んでいません。［二次情報］
+  - FilterLists.com は、このリストを CC BY-SA 3.0 と記録していて、リポジトリの LICENSE と食い違っています（FilterLists の API の id 163・2207 で確認。2026-09-29）。
+  - Safari 版（https://filters.adtidy.org/extension/safari/filters/7.txt ）の先頭の行 `License:` は、AdguardFilters の LICENSE（GPLv3）を指しています。［確認済：2026-09-29］
 - 使う場合の影響：
   - GPLv3 のリストとして扱うと、変換後の JSON も GPLv3 で配ることになります。
   - basic に入れると、EasyList と同じ JSON になるので、1 つのライセンスにそろえる必要があります（EasyList は GPLv3 も選べるので、GPLv3 にそろえることになる）。
   - GPLv3 のデータを App Store のアプリに同梱して配ることについては、専門家の意見を聞くことをすすめます。【要確認】
-- 件数：公開されている件数は見つかりませんでした。使うなら CI で測ります（予算に収まるかも確かめる）。
+- 件数：Safari 版を手元の変換器（`--safari-version 17`）で測ると、Safari のルール 6,367 件（1.18 MB）、変換できないもの 32 件でした（2026-09-29）。今の basic（58,951 件）に足すと約 65,300 件になり、上限の 65,000 件を超えます。
 
 ### 280blocker（使用禁止）
 
@@ -144,6 +144,18 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 - Warui Hosts
 - Japan Hosts Ultimate
 
+### 出どころが使用禁止のリストを含むもの・営利で使えないもの（2026-09-29 に確認）
+
+ライセンスの表示が緩くても、作者が「280blocker や豆腐フィルタから取った・参考にした」と書いているものは使いません（中身の権利が、表示のライセンスでは与えられないため）。
+
+| リスト | 表示されているライセンス | 使わない理由 | 出典 |
+|---|---|---|---|
+| もちフィルタ（mochi・ichigo など） | README と各リストの先頭に「CC0 (Public Domain)」。LICENSE のファイルはない | 公式ページに「EasyListと豆腐フィルタから必要最小限のフィルタを抜き出したもの」とある。FilterLists は All Rights Reserved と記録 | https://eeii0a5l.github.io/mochifilter_homepage/mochi.html 、 https://github.com/eEIi0A5L/adblock_filter |
+| Yuki's uBlock Japanese filters | CC BY-SA 4.0（LICENSE.md） | README-JP の脚注で、280blocker のドメインリストと豆腐フィルタを参考にしたと書いている。2022-12-01 にアーカイブ | https://github.com/Yuki2718/adblock/blob/master/japanese/README-JP.md |
+| k2jp ABP Japanese filters | 先頭の行に「Code license: GNU GPL v3」「Content license: CC BY-NC-SA 4.0」 | 中身が非営利の条件（NC）。2021-05 で更新が止まっている | https://github.com/k2jp/abp-japanese-filters |
+| hosts-jp（tiuxo/hosts の ads） | CC BY 4.0（LICENSE） | ライセンスは使える形だが、2019-04-26 のまとめての追加（約 2,100 件）に出典の記載がなく、そのうち 58% がライセンスのない古いリスト（adawaylist-jp。FilterLists では All Rights Reserved）にも入っている。アフィリエイトの転送用のホストも入っている。まとめて取り込まず、使うなら 1 件ずつ根拠を確かめて自作ルールにする | https://github.com/tiuxo/hosts |
+| nanj-filter | CC0 | 280blocker と一緒に使う前提のもの | https://github.com/nanj-adguard/nanj-filter |
+
 ---
 
 ## 7. ほかの候補（広告・不快な要素・日本向け）
@@ -153,7 +165,8 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 | リスト | URL | ライセンス | 確かさ | メモ |
 |---|---|---|---|---|
 | EasyPrivacy | https://easylist.to/easylist/easyprivacy.txt | EasyList のリポジトリのデュアルライセンス（リポジトリ全体にかかる） | ［二次情報］ | 追跡の防止。広告のリストとは別 |
-| Fanboy's Annoyance List | https://secure.fanboy.co.nz/fanboy-annoyance.txt | EasyList のリポジトリのデュアルライセンス。FilterLists と先頭の行の要約では CC BY 3.0 | ［二次情報］ | どちらでも、表示すれば営利の利用ができる |
+| Fanboy's Annoyance List | https://secure.fanboy.co.nz/fanboy-annoyance.txt | 先頭の行に CC BY 3.0。easylist.to のライセンスのページは「EasyList・EasyPrivacy・EasyList Germany・EasyList Italy 以外は別の条件のことがある」としているので、根拠にするのは先頭の行の CC BY 3.0 | ［確認済：2026-09-29］ | 中身の 52% が Cookie の同意の表示。年齢確認の画面を隠すルール（Fanboy Agegate）が 347 件ある。日本のサイト向けは 0.7%。「不快な広告」には当たらない |
+| Fanboy's Japanese | https://fanboy.co.nz/fanboy-japanese.txt | 先頭の行に CC BY 3.0 | ［確認済：2026-09-29］ | 2019-07 で更新が止まっている |
 | EasyList Cookie List | https://secure.fanboy.co.nz/fanboy-cookiemonster.txt | 同上 | ［二次情報］ | Cookie の同意の表示 |
 | AdGuard Cookie Notices（ID 18） | https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_18_Annoyances_Cookies/filter.txt | GPLv3（AdguardFilters） | ［二次情報］ | |
 | AdGuard Popups（ID 19） | https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_19_Annoyances_Popups/filter.txt | GPLv3（AdguardFilters） | ［二次情報］ | |
@@ -163,12 +176,13 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 | AdGuard Mobile Ads（ID 11） | https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt | GPLv3（AdguardFilters） | ［二次情報］ | |
 | AdGuard Annoyances（ID 14） | ― | ― | ［二次情報］ | メタデータで非推奨（deprecated） |
 | uBlock filters – Annoyances | https://ublockorigin.github.io/uAssets/filters/annoyances.txt | GPLv3（uAssets の LICENSE） | ［二次情報］ | URL は assets.json の要約から |
-| もちフィルタ | https://raw.githubusercontent.com/eEIi0A5L/adblock_filter/master/mochi_filter.txt ほか | README では「CC0 (Public Domain)」。LICENSE のファイルはない | ［二次情報］ | 最後の更新 2025-11-15 |
-| AdGuard Japanese filter Plus | https://yuki2718.github.io/adblock2/japanese/jpf-plus.txt | GPLv3（リポジトリ） | ［二次情報］ | Safari・iOS は正式には対象外（多くのルールが動かない、とされている） |
-| Yuki's uBlock Japanese filters | ― | CC BY-SA 4.0 | ［二次情報］ | 2022-12-01 にアーカイブ。2022 年 10 月で更新が止まっている |
-| nanj-filter | ― | CC0 | ［二次情報］ | 最後の更新 2018-03-27。280blocker と一緒に使う前提のもの |
+| AdGuard Japanese filter Plus | https://yuki2718.github.io/adblock2/japanese/jpf-plus.txt | GPLv3（リポジトリの LICENSE.md） | ［確認済：2026-09-29］ | Safari・iOS は正式には対象外（多くのルールが動かない、とされている） |
 
-出典：https://adguard.com/kb/general/ad-filtering/adguard-filters/ 、 https://easylist.to/ 、 https://github.com/uBlockOrigin/uAssets 、 https://github.com/eEIi0A5L/adblock_filter 、 https://github.com/Yuki2718/adblock2 、 https://github.com/nanj-adguard/nanj-filter 、 https://filterlists.com/
+もちフィルタ・Yuki's uBlock Japanese filters・nanj-filter・hosts-jp は、[6.](#出どころが使用禁止のリストを含むもの営利で使えないもの2026-09-29-に確認) に移しました（使いません）。
+
+**日本向け・不快な広告のリストについて（2026-09-29 の調べ）**：FilterLists で日本語向けとされる 52 件を一次資料で確かめましたが、営利のアプリで使えて、今も更新されている日本向けのリストは見つかりませんでした。「不快な広告」（性的な広告・過激な漫画の広告・コンプレックスをあおる広告）を対象にしたリストもありません。日本のサイト向けのルールは、根拠を 1 件ずつ付けて自作します。
+
+出典：https://adguard.com/kb/general/ad-filtering/adguard-filters/ 、 https://easylist.to/ 、 https://easylist.to/pages/licence.html 、 https://github.com/uBlockOrigin/uAssets 、 https://github.com/Yuki2718/adblock2 、 https://api.filterlists.com/lists
 
 - GPLv3 のリストを使うと、そのカテゴリの JSON は GPLv3 で配ることになります（[AdGuard Japanese filter](#adguard-japanese-filter今は無効) と同じ注意）。
 - annoyance（プレミアム）のカテゴリに入れるなら、今の annoyance は自作ルールだけなので、ライセンスをそろえる相手は自作ルールだけです。
