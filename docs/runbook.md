@@ -91,23 +91,49 @@
 
 ### 5. 主なサイトで確かめる
 
-ルールの更新で、よく使われるサイトの表示や操作が壊れていないかを、iPhone の Safari（2 つの拡張をオン、プレミアムの状態）で確かめます。
+ルールの更新で、よく使われるサイトの表示や操作が壊れていないかを、iPhone の Safari（2 つの拡張をオン、プレミアムの状態）で確かめます。崩れていたら、拡張をオフにして同じページと見比べ、ルールのせいかを確かめます。
 
-確かめるサイトは、根拠をもって運営者が決めてください（例：利用者の報告が多いサイト、アクセスの多い国内のサイトの公開されている順位など）。一覧を作るときの区分の例：
+- **ログインしない・購入しない**。銀行・証券はログインの画面が表示されるところまで、通販はカートの画面まで
+- 動画の広告は消せないので、消えなくてよい（再生と表示が崩れないかだけを見る）
+- 毎週すべてでなくてよい。ルールを大きく変えた週は全部、それ以外は各区分から 1 つずつ
 
-- ニュース・新聞、ポータル
-- 天気、地図・乗換案内
-- 料理のレシピなど、広告の多い情報サイト
-- 通販（商品の検索からカートに入れるまで。決済の画面は崩れると影響が大きい）
-- 銀行・証券・決済（ログインの画面が表示されるか。**実際にはログインしない**）
-- 動画・配信（動画の広告はブロックできないが、再生と表示が崩れないか）
-- SNS のウェブ版、公的機関・自治体のサイト
+選んだ根拠（2026-09-29 に調べたもの。順位は第三者による推計）：
 
-| 区分 | サイト | 確かめること | 最後に確かめた日 | 結果 |
-|---|---|---|---|---|
-| 【要記入】 | 【要記入】 | 【要記入：例「トップと記事のページが崩れない。記事中の広告が消える」】 | 【要記入】 | 【要記入】 |
-| 【要記入】 | 【要記入】 | 【要記入】 | 【要記入】 | 【要記入】 |
-| 【要記入】 | 【要記入】 | 【要記入】 | 【要記入】 | 【要記入】 |
+- [SW] Similarweb「Top Websites Ranking – Japan」（2026 年 8 月）と区分別の順位 https://www.similarweb.com/top-websites/japan/
+- [SR] Semrush（2026 年 8 月）https://www.semrush.com/trending-websites/jp/all
+- [AH] Ahrefs Top（自然検索の流入の推計、2026 年 8 月）https://ahrefstop.com/websites/japan
+- [JJ] 時事ドットコム（2025-07-05）：性的な広告が、ゲームの攻略サイトやレシピサイトに出ていたという記事 https://www.jiji.com/jc/v8?id=202507seitekiad-team
+- 「広告あり」は、2026-09-29 に取った HTML に広告配信の読み込み（doubleclick・prebid・taboola など）があったことによる。どんな広告が出るかは確かめていない
+- 2025 年 4 月以降、業界の自主規制で、不快な広告の出方が変わっている（ITmedia NEWS 2025-06-05）。プレミアムの確認用のサイトは、実際に不快な広告が出ているかを見て入れ替える
+
+| 区分 | サイト | 確かめること | 根拠 | 最後に確かめた日 | 結果 |
+|---|---|---|---|---|---|
+| ニュース・ポータル | [Yahoo! JAPAN](https://www.yahoo.co.jp/) | トップのニュース・検索窓・天気の欄が崩れない。広告が消えた所に大きな空白や重なりが出ない | SW 総合 2 位・ニュース 1 位、SR 3 位、AH 1 位 | | |
+| ニュース・ポータル | [Yahoo!ニュース](https://news.yahoo.co.jp/) | トップ → 記事 → 続きのページ → コメント欄まで開いてスクロールできる。記事中の広告が消える | SW 総合 4 位・ニュース 2 位 | | |
+| ニュース・ポータル | [日本経済新聞](https://www.nikkei.com/) | トップと無料記事が読める。有料記事の案内とログインボタンが出る（ログインしない） | SW ニュース 5 位、AH 30 位 | | |
+| 天気 | [tenki.jp](https://tenki.jp/) | 地域の予報と雨雲レーダーが動く。記事下のおすすめ広告が消えても崩れない | SW 総合 28 位、SR 10 位、AH 9 位 | | |
+| 地図 | [Google マップ](https://www.google.com/maps) | 地図の表示・移動・拡大、場所の検索、電車の経路検索ができる | SW 地図 1 位 | | |
+| 乗換案内 | [駅探](https://ekitan.com/) | 出発駅と到着駅を入れて乗換の結果が出る。時刻表のページが開く | SW 地図 3 位、AH 97 位 | | |
+| 広告の多い情報サイト | [デリッシュキッチン](https://delishkitchen.tv/) | レシピを検索 → レシピのページ → 動画の再生。材料と手順が隠れない | SW レシピ 1 位、AH 8 位 | | |
+| 広告の多い情報サイト | [クラシル](https://www.kurashiru.com/) | 同上。記事中の広告枠が消えて、本文が読める（不快な広告の確認も兼ねる） | SW レシピ 2 位、AH 28 位、[JJ] | | |
+| 広告の多い情報サイト | [クックパッド](https://cookpad.com/jp) | 検索 → レシピ → つくれぽが表示される。ボット対策の画面で止まらない | SW レシピ 3 位、AH 19 位 | | |
+| 通販 | [Amazon.co.jp](https://www.amazon.co.jp/) | 検索 → 商品ページ → カートに入れる → カートの画面まで（レジに進まない） | SW 総合 7 位、SR 6 位 | | |
+| 通販 | [楽天市場](https://www.rakuten.co.jp/) | 検索 → 商品ページ → 買い物かごに入れる → かごの画面まで（購入手続きに進まない） | SW 総合 8 位、SR 7 位 | | |
+| 銀行 | [楽天銀行（ログイン画面）](https://fes.rakuten-bank.co.jp/MS/main/RbS?CurrentPageID=START&&COMMAND=LOGIN) | 入力欄とボタンが表示される（何も入力せず、ログインしない） | SW 銀行・与信 1 位 | | |
+| 証券 | [楽天証券（ログイン画面）](https://www.rakuten-sec.co.jp/ITS/V_ACT_Login.html) | 同上 | SW 総合 33 位・投資 1 位 | | |
+| 銀行 | [三菱UFJ銀行](https://www.bk.mufg.jp/) | トップのログインからログインの画面が開ける（ログインしない） | SW 家計・資産管理 1 位（mufg.jp）、AH 80 位 | | |
+| 動画・配信 | [YouTube](https://www.youtube.com/) | 検索 → 再生 → 全画面 → コメント。動画の広告は消えなくてよい | SW 総合 3 位、SR 2 位 | | |
+| 動画・配信 | [ニコニコ動画](https://www.nicovideo.jp/) | 動画のページで再生とコメントが出る | SW 総合 49 位・配信 5 位 | | |
+| SNS | [X](https://x.com/) | ログインせずに、公開の投稿やプロフィールの URL を開く。ログインの案内が出る（ログインしない） | SW 総合 5 位、SR 4 位 | | |
+| SNS | [Instagram](https://www.instagram.com/) | 同上 | SW 総合 12 位 | | |
+| SNS | [アメブロ](https://ameblo.jp/) | 公開ブログの記事と記事一覧が開ける。広告が消えても本文が読める | SW 総合 19 位・SNS 3 位、AH 18 位 | | |
+| 公的機関 | [日本郵便](https://www.post.japanpost.jp/)（[郵便追跡](https://trackings.post.japanpost.jp/services/srv/search/)） | トップと追跡番号の入力画面が表示される | SW 行政 1 位、AH 40 位 | | |
+| 公的機関 | [国税庁](https://www.nta.go.jp/) | トップ・サイト内検索・PDF が開く | SW 行政 4 位、AH 75 位 | | |
+| 自治体 | 【要記入：お住まいの市区町村など】 | トップ・お知らせ・検索が開く | アクセスの多い自治体の公開の順位は見つからなかった | | |
+| 不快な広告（プレミアム） | [GameWith](https://gamewith.jp/) | 攻略記事のページで、目次・表・コメント欄が崩れない。記事中と下の広告が消える | SW 総合 38 位、AH 23 位、[JJ]（攻略サイト） | | |
+| 不快な広告（プレミアム） | [Game8](https://game8.jp/) | 同上 | AH 50 位、[JJ] | | |
+
+入れ替えの候補（どれも 2026-09-29 に開けることを確かめた）：livedoor ニュース（SW 総合 34 位）、Yahoo!天気・災害（SW 天気 1 位）、Yahoo!ショッピング（SW 総合 42 位）、メルカリ（SW 総合 41 位）、ABEMA（AH 70 位）、TVer（AH 90 位）、厚生労働省（SW 行政 2 位）、気象庁（AH 45 位）。NAVITIME（SW 旅行 1 位）は自動のアクセスを断るため確かめていないが、ブラウザでは開けるはず。
 
 問題があれば、[4.](#4-自作ルールを足す) の手順で例外ルールを足すか、急ぐなら[前の版に戻します](#前の版に戻す)。
 
@@ -243,7 +269,7 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 2. 管理画面の「Workers & Pages」で、workers.dev のサブドメインを一度作る（作らないと、CI からデプロイできない）。
 3. Worker の名前を決める（英小文字・数字・ハイフン、63 文字まで、先頭と末尾はハイフン以外）。**サブドメインと名前は、アプリの公開後に変えられません**（README の「workers.dev を使うことのリスク」）。
 4. API トークンを作る：「My Profile」→「API Tokens」→「Create Custom Token」→ 権限は **Account → Workers Scripts → Edit** だけ、対象はこのアカウントだけ。アカウント ID も控える。
-5. この Worker で、アクセスの記録（Workers Logs・Logpush など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。
+5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。App Store の App Privacy で「データの収集なし」と答える場合は、その前提になるので、公開のあとも設定を変えない（どう答えるかは ios リポジトリの判断材料で決める）。
 
 ### このリポジトリの値
 
@@ -252,7 +278,7 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
    - `wrangler.jsonc` の `name`（`<Worker 名>`）
    - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`
 7. 署名の鍵を作って登録する：`scripts/keygen.sh <リポジトリの外のディレクトリ>`（[signing.md](signing.md)）。`keys/trusted-public-keys.json` とアプリの公開鍵を同じにする。
-8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。残りの数は `node .github/scripts/check-config.mjs` が表示します。`LICENSE-rules`・`NOTICE`・README の「【要記入】」も埋める。
+8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、`docs/drafts/tokushoho.html` を `site/` に移して埋める。残りの数は `node .github/scripts/check-config.mjs` が表示します。`LICENSE-rules`・`NOTICE`・README の「【要記入】」も埋める。
 9. ライセンスの判断（[licensing.md](licensing.md)）を済ませ、決めたものに合わせて `LICENSE-rules`・`NOTICE`・`site/licenses.html` を直す。
 
 ### GitHub
