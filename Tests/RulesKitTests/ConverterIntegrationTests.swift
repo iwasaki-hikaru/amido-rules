@@ -183,6 +183,34 @@ struct BuildPipelineTests {
         #expect(verified.lists.count == 2)
     }
 
+    @Test("--compose-out：拡張ごとに合成した JSON（アプリが Safari に渡す形）を書く。配信するディレクトリには入れない")
+    func writesCompositions() async throws {
+        let root = try makeRepository(basic: "||ads.example.com^", annoyance: "example.org##.popup")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let composeDirectory = root.appending(path: "build/compose")
+        let options = try options(root) {
+            $0.composeDirectory = composeDirectory
+            $0.skipCompileCheck = true
+        }
+        let report = await BuildPipeline.run(options)
+        #expect(report.ok, "\(report.errors)")
+
+        let names = try FileManager.default.contentsOfDirectory(atPath: composeDirectory.path(percentEncoded: false)).sorted()
+        #expect(names == ["extension-basic.json", "extension-plus.json"])
+        for name in names {
+            let data = try Data(contentsOf: composeDirectory.appending(path: name))
+            let rules = try #require(try JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+            // 末尾は許可サイトのルールの見本（アプリが足すものと同じ形）
+            let last = try #require(rules.last)
+            let action = last["action"] as? [String: Any]
+            #expect(action?["type"] as? String == "ignore-previous-rules")
+        }
+        // basic は、basic のルール（/check 用を含む 2 件）と許可サイトの 1 件
+        let basic = try JSONSerialization.jsonObject(with: Data(contentsOf: composeDirectory.appending(path: "extension-basic.json"))) as? [Any]
+        #expect(basic?.count == 3)
+        #expect(!FileManager.default.fileExists(atPath: options.outDirectory.appending(path: "extension-basic.json").path(percentEncoded: false)))
+    }
+
     @Test("scam（plus の 2 番目）に例外ルールがあれば失敗し、manifest を書かない")
     func exceptionInScamFails() async throws {
         let root = try makeRepository(basic: "||ads.example.com^", scam: "@@||example.org^$document")

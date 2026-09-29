@@ -15,7 +15,9 @@ sources.yml（上流のリスト）＋ custom/（自作ルール）
 
 - 配信するファイルの形式（manifest・署名・鍵・リストの名前・ダミールール・許可サイトのルール）は、[docs/format.md](docs/format.md) で決めています。アプリとの取り決めなので、形式を変えるときは両方を同時に直します。
 - ツール（rulestool）は Swift で書いていて、外部の依存はありません。WebKit で実際にコンパイルして確かめるので、macOS でだけ動きます。
-  - コンパイルで確かめているのは、CI のランナー（macOS 26）の WebKit だけです。iOS 17・18 の Safari で読み込めるかは、まだ確かめていません（iOS 18.6 シミュレーターでのコンパイルは後回しにしています。アプリの `docs/device-verification.md` を参照）。
+  - CI では、macOS 26 の WebKit に加えて、iOS 18.6 のシミュレーターの WebKit でも、アプリが Safari に渡す形の JSON をコンパイルします（`.github/scripts/ios-webkit-check.sh`。通らなければ公開しない）。
+  - iOS 17 は、手動のワークフロー `ios17-webkit.yml` で確かめます（iOS 17 のシミュレーターがある macos-14 のイメージは、2026-11-02 に使えなくなります）。
+  - シミュレーターで確かめられるのは「その版の WebKit が読める書き方か」までです。件数や大きさで実機が失敗しないかは、実機で確かめます（アプリの `docs/device-verification.md`）。
 
 ### カテゴリと拡張
 

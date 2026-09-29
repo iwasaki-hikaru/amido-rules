@@ -18,6 +18,9 @@ public struct BuildOptions: Sendable {
     public var previousManifest: String?
     public var allowCountChange: Bool
     public var skipCompileCheck: Bool
+    /// 拡張ごとに合成した JSON（アプリが Safari に渡す形）を書く場所。nil なら書かない。
+    /// iOS のシミュレーターの WebKit でのコンパイルの確認（.github/scripts/ios-webkit-check.sh）に使う。
+    public var composeDirectory: URL?
     public var now: Date
     /// 上流のリストのキャッシュ（build/sources）。
     public var cacheDirectory: URL
@@ -36,6 +39,7 @@ public struct BuildOptions: Sendable {
         previousManifest: String? = nil,
         allowCountChange: Bool = false,
         skipCompileCheck: Bool = false,
+        composeDirectory: URL? = nil,
         now: Date = Date(),
         cacheDirectory: URL? = nil,
         workDirectory: URL? = nil
@@ -52,6 +56,7 @@ public struct BuildOptions: Sendable {
         self.previousManifest = previousManifest
         self.allowCountChange = allowCountChange
         self.skipCompileCheck = skipCompileCheck
+        self.composeDirectory = composeDirectory
         self.now = now
         self.cacheDirectory = cacheDirectory ?? root.appending(path: "build/sources")
         self.workDirectory = workDirectory ?? root.appending(path: "build/work")
@@ -143,6 +148,10 @@ public final class BuildPipeline {
         report.extensions = budget.usages
         report.errors += budget.errors
         report.warnings += budget.warnings
+
+        if let directory = options.composeDirectory {
+            writeCompositions(config: config, to: directory)
+        }
 
         if options.skipCompileCheck {
             report.compile = BuildReport.Compile(skipped: true, reason: "--skip-compile-check を指定")
@@ -339,22 +348,43 @@ public final class BuildPipeline {
 
     // MARK: - コンパイル
 
-    func compileCheck(config: RulesConfig) async -> BuildReport.Compile {
-        #if canImport(WebKit)
-        var entries: [BuildReport.CompileEntry] = []
+    /// 拡張ごとに、アプリが Safari に渡す形の JSON を作る：カテゴリを順につなぎ、末尾に許可サイトのルールを足す
+    ///（ルールがなければダミー）。つなげない拡張は、エラーに記録して飛ばす。
+    func composedExtensions(config: RulesConfig) -> [(name: String, data: Data, rules: Int)] {
+        var result: [(name: String, data: Data, rules: Int)] = []
         for (name, budget) in config.budgets.orderedExtensions {
             let lists = budget.categories.compactMap { outputs[$0] }
             let rules = budget.categories.compactMap { measures[$0]?.rules }.reduce(0, +)
-            // 拡張に渡す形：カテゴリを順につなぎ、末尾に許可サイトのルールを足す（ルールがなければダミー）
             let extras = lists.isEmpty
                 ? [RuleConstants.dummyRuleJSON, RuleConstants.sampleAllowlistRuleJSON]
                 : [RuleConstants.sampleAllowlistRuleJSON]
             do {
-                let joined = try RuleListJoin.join(lists, appending: extras)
-                entries.append(await compileEntry(target: "extension:\(name)", data: joined, rules: rules + extras.count))
+                result.append((name, try RuleListJoin.join(lists, appending: extras), rules + extras.count))
             } catch {
                 report.errors.append("拡張 \(name) のリストをつなげません：\(error.localizedDescription)")
             }
+        }
+        return result
+    }
+
+    /// 合成した JSON を `<directory>/extension-<name>.json` に書く（配信はしない。iOS での確認用）。
+    func writeCompositions(config: RulesConfig, to directory: URL) {
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            for composed in composedExtensions(config: config) {
+                try composed.data.write(to: directory.appending(path: "extension-\(composed.name).json"), options: .atomic)
+            }
+            log("合成した JSON を書きました：\(directory.path)")
+        } catch {
+            report.errors.append("合成した JSON を書けません：\(error.localizedDescription)")
+        }
+    }
+
+    func compileCheck(config: RulesConfig) async -> BuildReport.Compile {
+        #if canImport(WebKit)
+        var entries: [BuildReport.CompileEntry] = []
+        for composed in composedExtensions(config: config) {
+            entries.append(await compileEntry(target: "extension:\(composed.name)", data: composed.data, rules: composed.rules))
         }
         for category in RuleCategory.allCases {
             guard let data = outputs[category], let measure = measures[category] else { continue }

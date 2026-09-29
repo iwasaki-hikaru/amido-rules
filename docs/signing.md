@@ -60,7 +60,7 @@ swift run -c release rulestool keygen --out ~/rules-signing-keys/rules-signing-<
 ### 作ったあとの手順
 
 1. `keys/trusted-public-keys.json` を、2 本の公開鍵にする（PR で）。
-2. 同じ 2 本の公開鍵を、iOS アプリ（`ios/App/Config/AppConfig.swift` の公開鍵の定数）に入れる。
+2. 同じ 2 本の公開鍵を、iOS アプリ（`ios/App/Config/AppConfig.swift` の公開鍵の定数）に入れる。1. を保存したあと、ios リポジトリで `swift scripts/configure.swift --install-keys --apply` を実行すると写せる。
 3. 本番用の秘密鍵を、GitHub の Secret に登録する。
    - 画面から：「Settings」→「Environments」→ `production` →「Environment secrets」→「Add secret」。名前は `RULES_SIGNING_KEY`、値は `rules-signing-primary.key` の中身（1 行）。
    - `gh` を使うなら（中身を画面に出さずに登録できる）：

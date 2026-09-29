@@ -1,0 +1,74 @@
+# iOS 17 のシミュレーターの WebKit で、公開したルール（アプリが Safari に渡す形）をコンパイルする（手動で実行する）。
+#
+# - iOS 17 のシミュレーターがあるのは macos-14 のイメージだけ。GitHub は、このイメージを 2026-11-02 に
+#   使えなくする（https://github.com/actions/runner-images/issues/13518 ）。それ以降は、このワークフローを消し、
+#   iOS 17 の実機か、手元に iOS 17 のランタイムを入れたシミュレーターで確かめる（docs/runbook.md）
+# - 公開のワークフロー（publish.yml）が保存した合成した JSON（rules-compose）を使う。run_id を空にすると、
+#   main での最後の成功した実行のものを使う
+# - アクションは GitHub 公式のものだけを、コミットの SHA で固定する（コメントはその SHA のタグ）
+name: iOS 17 の WebKit でコンパイル（手動）
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 合成した JSON を取り出す publish.yml の実行の ID（空なら、main での最後の成功した実行）
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  actions: read # ほかの実行の成果物（rules-compose）を取り出すため
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ios17:
+    name: iOS ${{ matrix.version }} の WebKit でコンパイル
+    runs-on: macos-14
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        # 対応する最も古い版（17.0）と、17 の最後にランナーにある版（17.5）
+        version: ["17.0", "17.5"]
+    env:
+      # iOS 17 のシミュレーターの SDK を含み、Swift 6 系でビルドできる版
+      DEVELOPER_DIR: /Applications/Xcode_16.2.app/Contents/Developer
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 公開の実行を選ぶ
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          run_id="$INPUT_RUN_ID"
+          if [ -z "$run_id" ]; then
+            run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml --branch main --status success \
+              --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          fi
+          if ! [[ "$run_id" =~ ^[0-9]+$ ]]; then
+            echo "::error::合成した JSON を取り出す publish.yml の実行が見つかりません（run_id を指定してください）"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "publish.yml の実行 $run_id の成果物を使います"
+
+      - name: 合成した JSON を受け取る
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rules-compose
+          path: build/compose
+          run-id: ${{ steps.run.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: iOS ${{ matrix.version }} のシミュレーターでコンパイルする
+        run: .github/scripts/ios-webkit-check.sh "${{ matrix.version }}" build/compose/*.json

@@ -189,6 +189,7 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 | 変換器を用意する | GitHub から取得できない、タグが動かされた | 一時的なものなら流し直す。「タグのコミットが想定と違います」なら、何が起きたかを確かめるまで止める（[変換器を上げる](#道具の版を上げる)） |
 | ルールを作って検査する | 上流を取得できない、件数の変化、予算の超過、根拠のないルール、WebKit でのコンパイルの失敗 | エラーの内容のとおりに直す。件数の変化は[上の手順](#件数の変化で-ci-が止まったとき) |
 | 本番が build のときから変わっていないか確かめる | build と deploy の間に、巻き戻し（「前の版に戻す」）や別の公開で本番が変わった | 巻き戻したばかりなら、main を直してから公開する（そのまま流し直すと、巻き戻す前と同じ内容を公開し直してしまう）。意図しない変化なら、本番の版を確かめてから「Re-run all jobs」 |
+| iOS 18.6 の WebKit でコンパイル | macOS では通るが、iOS 18 の WebKit では読めない書き方のルールがある（`WKErrorDomain 6`） | ログの「Error while parsing …」のルールを探し、自作のルールなら直す。上流のリストのルールなら、そのルールを除く方法を決める（除き方は根拠とともに記録する）。ランナーに iOS 18.6 やXcode 16.4 がなくなったときは、`DEVELOPER_DIR` と版を、`actions/runner-images` の macOS 15 の README に合わせて直す |
 | 本番と比べる | 本番に届かない | 流し直す |
 | 署名する | `RULES_SIGNING_KEY` が未登録、または鍵が `keys/trusted-public-keys.json` にない | [signing.md](signing.md) |
 | 検証する（Node の crypto） | 署名や manifest の形がおかしい | rulestool と Node で結果が違うなら、原因がわかるまで公開しない |
@@ -248,6 +249,14 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 
 ---
 
+## iOS 17 の WebKit で確かめる（リリースの前と、ルールを大きく変えたとき）
+
+公開のワークフローは、iOS 18.6 のシミュレーターでだけコンパイルを確かめます。iOS 17 は手動です。
+
+1. 「Actions」→「iOS 17 の WebKit でコンパイル（手動）」→「Run workflow」。`run_id` は空でよい（main での最後の成功した公開のものを使う）
+2. iOS 17.0 と 17.5 の両方が成功すればよい。失敗したら、上の表の「iOS 18.6 の WebKit でコンパイル」と同じように直す
+3. **2026-11-02 以降は使えません**（iOS 17 のシミュレーターがある macos-14 のイメージがなくなる。https://github.com/actions/runner-images/issues/13518 ）。それ以降は、このワークフローを消し、iOS 17 の実機か、手元に iOS 17 のランタイムを入れたシミュレーターで、`.github/scripts/ios-webkit-check.sh 17.5 <合成した JSON>` を実行する（合成した JSON は、公開の実行の成果物 `rules-compose`）
+
 ## 道具の版を上げる
 
 どれも PR で行い、CI が通ることを確かめてからマージします。
@@ -272,6 +281,8 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。App Store の App Privacy で「データの収集なし」と答える場合は、その前提になるので、公開のあとも設定を変えない（どう答えるかは ios リポジトリの判断材料で決める）。
 
 ### このリポジトリの値
+
+ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・配信ホスト（`config/distribution.json` と `wrangler.jsonc` の `name`）・rules リポジトリの URL・フォームの URL を、両方のリポジトリにまとめて書き込めます（`--apply` を付けるまでは表示だけ）。手で書き換える場合は次のとおり。
 
 6. 配信ホストを 3 か所で同じにする（英小文字で）：
    - `config/distribution.json` の `host`（`<Worker 名>.<サブドメイン>.workers.dev`）

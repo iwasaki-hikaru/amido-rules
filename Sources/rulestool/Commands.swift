@@ -43,8 +43,10 @@ enum CommandLineTool {
               --previous-manifest <url|path>  件数の比較に使う前の manifest
               --allow-count-change          件数の急な変化を許す（警告にする）
               --skip-compile-check          WebKit でのコンパイルを省く
+              --compose-out <dir>           拡張ごとに合成した JSON（アプリが Safari に渡す形）を書く（配信はしない。
+                                            iOS のシミュレーターでのコンパイルの確認に使う）
             """,
-            valueOptions: ["converter", "out", "sources", "config", "host", "version", "published-at", "previous-manifest"],
+            valueOptions: ["converter", "out", "sources", "config", "host", "version", "published-at", "previous-manifest", "compose-out"],
             flags: ["offline", "allow-count-change", "skip-compile-check"]
         ),
         "sign": CommandSpec(
@@ -182,7 +184,8 @@ enum CommandLineTool {
             offline: arguments.flag("offline"),
             previousManifest: arguments.value("previous-manifest"),
             allowCountChange: arguments.flag("allow-count-change"),
-            skipCompileCheck: arguments.flag("skip-compile-check")
+            skipCompileCheck: arguments.flag("skip-compile-check"),
+            composeDirectory: arguments.value("compose-out").map(fileURL)
         )
         let report = await BuildPipeline.run(options) { printError($0) }
 

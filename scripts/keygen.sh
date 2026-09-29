@@ -91,6 +91,8 @@ cat << EOF
 {"keys":[{"id":"primary","publicKey":"$primary_public"},{"id":"standby","publicKey":"$standby_public"}]}
 
 2. 同じ 2 本の公開鍵を、iOS アプリ（ios/App/Config/AppConfig.swift の公開鍵の定数）に登録する
+   1. の JSON を保存したあと、ios リポジトリで次を実行すると写せます（--apply を付けるまでは表示だけ）：
+       swift scripts/configure.swift --install-keys --apply
    アプリはどちらかの鍵で検証できれば受け入れます。2 本とも入れたアプリを公開してから、鍵を入れ替えられるようになります。
 
 3. 本番用（primary）の秘密鍵を、GitHub の production environment の Secret「RULES_SIGNING_KEY」に登録する
