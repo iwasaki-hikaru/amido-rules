@@ -213,7 +213,7 @@ function checkHtml() {
     const file = `site/${name}`;
     const html = readFileSync(file, "utf8");
     const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "");
-    placeholders += (withoutComments.match(/【要記入/g) ?? []).length;
+    placeholders += (withoutComments.match(/【要(記入|確認)/g) ?? []).length;
 
     if (!/<html lang="ja">/.test(withoutComments)) error(file, '<html lang="ja"> にしてください');
     for (const match of withoutComments.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
@@ -247,9 +247,57 @@ function checkHtml() {
     }
   }
   if (placeholders > 0) {
-    notice(`site/ に「【要記入】」が ${placeholders} か所あります。公開前に埋めてください`);
+    // 配信ホストを本物にしたあと（公開できる状態）は、埋め忘れたページを配信しないように失敗にする
+    let host = "";
+    try {
+      host = JSON.parse(readFileSync("config/distribution.json", "utf8")).host ?? "";
+    } catch {
+      // 読めないことは checkWrangler が報告する
+    }
+    if (typeof host === "string" && host !== "" && !host.includes("PLACEHOLDER")) {
+      error("site/", `「【要記入】」「【要確認】」が ${placeholders} か所残っています。配信ホストが本物なので、埋めてから公開してください`);
+    } else {
+      notice(`site/ に「【要記入】」「【要確認】」が ${placeholders} か所あります。公開前に埋めてください`);
+    }
   }
   ok(before, `site/：${pages.length} ページ`);
+}
+
+// --- 5. keys/trusted-public-keys.json ---
+// 秘密鍵が公開されている鍵（RFC 8032 のテスト用・開発用）を、本番で信頼しないようにする。
+// これらを入れると、誰でも正しい署名を作れてしまう。
+const PUBLICLY_KNOWN_KEYS = new Set([
+  "11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=", // RFC 8032 7.1 TEST 1
+  "PUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw=", // RFC 8032 7.1 TEST 2
+  "/FHNjmIYoaONpH7QAjDwWAgW7RO6MwOsXeuRFUiQgCU=", // RFC 8032 7.1 TEST 3
+]);
+function checkTrustedKeys() {
+  const before = failures;
+  const file = "keys/trusted-public-keys.json";
+  let keys;
+  try {
+    keys = JSON.parse(readFileSync(file, "utf8")).keys;
+  } catch (e) {
+    error(file, `読めません（${e.message}）`);
+    return;
+  }
+  if (!Array.isArray(keys)) {
+    error(file, "keys を配列にしてください");
+    return;
+  }
+  for (const [index, entry] of keys.entries()) {
+    const id = String(entry?.id ?? "");
+    if (PUBLICLY_KNOWN_KEYS.has(entry?.publicKey)) {
+      error(file, `${index + 1} 件目（${id}）は、秘密鍵が公開されているテスト用の鍵です。本番では信頼できません`);
+    }
+    if (id === "dev" || id.startsWith("rfc8032")) {
+      error(file, `${index + 1} 件目の id「${id}」は開発用・テスト用の鍵の名前です。本番の鍵を入れてください（docs/signing.md）`);
+    }
+  }
+  if (keys.length === 0) {
+    notice(`${file} に鍵がありません。公開する前に、scripts/keygen.sh で作った 2 本の公開鍵を入れてください`);
+  }
+  ok(before, `${file}：公開されている鍵は入っていません`);
 }
 
 // --- 4. deploy/ ---
@@ -282,6 +330,7 @@ checkWrangler();
 checkHeaders();
 checkHtml();
 checkDeploy();
+checkTrustedKeys();
 
 if (failures > 0) {
   console.error(`問題が ${failures} 件あります`);

@@ -121,6 +121,11 @@ swift run -c release rulestool keygen --out ~/rules-signing-keys/rules-signing-<
    - Cloudflare の管理画面の「Deployments」に、身に覚えのない公開がないか（あれば[前の版に戻す](runbook.md#前の版に戻す)）。
    - CI が漏れの原因かもしれないときは、`CLOUDFLARE_API_TOKEN` も作り直す。
 
+**Cloudflare のトークンやアカウントが漏れた疑いがあるとき**は、1. より先に次を行います。
+- トークンを無効にする（「My Profile」→「API Tokens」）。
+- `wrangler rollback`（前の版に戻す）は使わない。攻撃者が置いた版に戻ってしまうことがあります。代わりに、GitHub Release の一式から公開し直す（`rollback.yml` を `release_tag` を指定して実行。[runbook の方法 3](runbook.md#方法-3github-release-から公開し直す100-版より前または-cloudflare-の記録で戻せないとき)）。
+- Worker にスクリプト（`main`）や、Workers Logs・Logpush・Tail が足されていないかを確かめる。このリポジトリの設定は静的なファイルだけで、記録も無効にしています。
+
 ### そのあとに行うこと
 
 5. 新しい予備 C を作って保管し、[B, C] を埋め込んだアプリの更新を公開する。A を外したアプリが広まるまで、A は古いアプリで信頼されたままです。
@@ -130,6 +135,8 @@ swift run -c release rulestool keygen --out ~/rules-signing-keys/rules-signing-<
 
 - 署名だけでは、偽の manifest を利用者に届けられません。アプリは、埋め込んだ配信ホストから HTTPS でだけ取得するので、偽物を届けるには、配信（Cloudflare のアカウントや API トークン）も乗っ取る必要があります。
 - 偽の manifest が届いた場合でも、コンテンツブロッカーのルールでできるのは、読み込みを止める、要素を隠す、ルールを打ち消すといったことで、ページの中身を読んだり送ったりはできません。起こりうるのは「サイトが表示されなくなる」「ブロックが効かなくなる」といった影響です。
+- アプリは「版が今と違えば」受け入れます（巻き戻しのため）。そのため、配信を乗っ取った人は、鍵がなくても、過去に正しく署名された版（GitHub Release に残っている）を配り直せます。
+- 配信（Cloudflare）を乗っ取られると、署名とは関係なく、サイトのページ（`/privacy` など）を偽物にしたり、Worker のスクリプトで利用者の IP アドレスなどを記録したりできます。Cloudflare のアカウントとトークンは、署名の鍵と同じくらい大事に守ります（runbook の「最初の公開の準備」の Cloudflare 4.）。
 
 ### 2 本とも漏れた・失ったとき
 

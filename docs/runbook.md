@@ -133,7 +133,7 @@
 | 広告ブロック対策のあるサイト | [東洋経済オンライン](https://toyokeizai.net/) | 記事が読める。全面の警告が出ない | 同上（EasyList に、このサイト向けの例外あり） | | |
 | 公的機関 | [日本郵便](https://www.post.japanpost.jp/)（[郵便追跡](https://trackings.post.japanpost.jp/services/srv/search/)） | トップと追跡番号の入力画面が表示される | SW 行政 1 位、AH 40 位 | | |
 | 公的機関 | [国税庁](https://www.nta.go.jp/) | トップ・サイト内検索・PDF が開く | SW 行政 4 位、AH 75 位 | | |
-| 自治体 | 【要記入：お住まいの市区町村など】 | トップ・お知らせ・検索が開く | アクセスの多い自治体の公開の順位は見つからなかった | | |
+| 自治体 | 【要記入：人口の多い自治体（例：横浜市・大阪市）】 | トップ・お知らせ・検索が開く | アクセスの多い自治体の公開の順位は見つからなかった。**このリポジトリは公開なので、住んでいる市区町村は書かない** | | |
 | 不快な広告（プレミアム） | [GameWith](https://gamewith.jp/) | 攻略記事のページで、目次・表・コメント欄が崩れない。記事中と下の広告が消える | SW 総合 38 位、AH 23 位、[JJ]（攻略サイト） | | |
 | 不快な広告（プレミアム） | [Game8](https://game8.jp/) | 同上 | AH 50 位、[JJ] | | |
 
@@ -282,6 +282,9 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 2. 管理画面の「Workers & Pages」で、workers.dev のサブドメインを一度作る（作らないと、CI からデプロイできない）。
 3. Worker の名前を決める（英小文字・数字・ハイフン、63 文字まで、先頭と末尾はハイフン以外）。**サブドメインと名前は、アプリの公開後に変えられません**（README の「workers.dev を使うことのリスク」）。
 4. API トークンを作る：「My Profile」→「API Tokens」→「Create Custom Token」→ 権限は **Account → Workers Scripts → Edit** だけ、対象はこのアカウントだけ。アカウント ID も控える。
+   - 「User Details」「Memberships」などの読み取り権限は付けない（付けると、認証に失敗したときの wrangler の出力に、アカウントのメールが出ることがある。このリポジトリの Actions のログは誰でも読める）。
+   - 有効期限（TTL）を付け、期限の前に作り直す。手元で使うトークンは別に作り、使い終わったら無効にする。
+   - できれば、このアプリ専用の Cloudflare アカウントにする（Workers Scripts の権限は、アカウントの中のすべての Worker に効くため）。アカウントの 2 段階認証は、セキュリティキーかパスキーにする。アカウント名にメールアドレスが入っていたら、入らない名前に変える。
 5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。App Store の App Privacy で「データの収集なし」と答える場合は、その前提になるので、公開のあとも設定を変えない（どう答えるかは ios リポジトリの判断材料で決める）。
 
 ### このリポジトリの値
@@ -293,25 +296,31 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
    - `wrangler.jsonc` の `name`（`<Worker 名>`）
    - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`
 7. 署名の鍵を作って登録する：`scripts/keygen.sh <リポジトリの外のディレクトリ>`（[signing.md](signing.md)）。`keys/trusted-public-keys.json` とアプリの公開鍵を同じにする。
-8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、`docs/drafts/tokushoho.html` を `site/` に移して埋める。残りの数は `node .github/scripts/check-config.mjs` が表示します。`LICENSE-rules`・`NOTICE`・README の「【要記入】」も埋める。
+8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、非公開の ios リポジトリの `docs/drafts/tokushoho.html` を `site/` に写して埋める（下書きには未発表の価格と個人情報の欄があるので、埋める前のものをこのリポジトリに入れない）。残りの数は `node .github/scripts/check-config.mjs` が表示します。`LICENSE-rules`・`NOTICE`・README の「【要記入】」も埋める。
 9. ライセンスの判断（[licensing.md](licensing.md)）を済ませ、決めたものに合わせて `LICENSE-rules`・`NOTICE`・`site/licenses.html` を直す。
 
 ### GitHub
 
 10. 公開リポジトリを作って push する。Issues を有効にしておく（失敗の報告に使う）。
-11. 「Settings」→「Environments」→ `production` を作る。
-    - 「Deployment branches and tags」を `main` だけにする。
+11. **アカウントを守る**（いちばん大事）：main に push できる人は、正しく署名されたルールを公開できます（署名は CI の中で自動で行うため）。
+    - GitHub の 2 段階認証を、パスキーかセキュリティキーにする（「Settings」→「Password and authentication」）。
+    - 使っていない Personal access token・SSH の鍵・連携アプリを消す（「Settings」→「Developer settings」「SSH and GPG keys」「Applications」）。`gh` を使っているなら、そのトークンも見直す。
+    - 「Settings」→「Emails」で「Keep my email addresses private」と「Block command line pushes that expose my email」をオンにする。
+12. 「Settings」→「Environments」→ `production` を、**Secret を登録する前に**作る（存在しない environment をワークフローが使うと、保護なしで自動で作られるため）。
+    - 「Deployment branches and tags」を「Selected branches and tags」にして、`main` だけにする。
     - 「Environment secrets」に `RULES_SIGNING_KEY`・`CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を登録する。
-    - 「Required reviewers」を付けると、公開のたびに承認が要ります（週 1 回の定期実行も承認待ちで止まる）。付けるかどうかは運営者が決める。
-12. 「Settings」→「Actions」→「General」：
-    - アクションをコミットの SHA で固定することを必須にする設定をオンにする。
-    - 「Workflow permissions」を読み取りだけにする（各ワークフローで必要な権限だけを付けている）。
-13. 必要なら、main を保護して、PR の検査（`pr.yml`）が通ることを必須にする。
+    - 「Required reviewers」に自分を入れ、「Allow administrators to bypass configured protection rules」をオフにすることをすすめます（公開リポジトリなら無料のプランでも使える）。main に書き込めるトークンが盗まれても、`Sources/`・`deploy/package-lock.json`・`.github/scripts/` を書き換えれば、秘密鍵やトークンを持ち出せてしまいます。承認があれば、その前に止められます。代わりに、公開のたび（週 1 回の定期実行も）承認が要ります。1 人で運用するので「Prevent self-review」はオンにしない。
+13. 「Settings」→「Actions」→「General」：
+    - 「Actions permissions」を「Allow <owner>, and select non-<owner>, actions and reusable workflows」にして、「Allow actions created by GitHub」だけをオンにする。「Require actions to be pinned to a full-length commit SHA」をオンにする。
+    - 「Approval for running fork pull request workflows from contributors」を「Require approval for all external contributors」にする（既定は「初めての人だけ」。承認がないと、ほかの人の PR が macOS のランナーで動く）。
+    - 「Workflow permissions」を「Read repository contents and packages permissions」にする（各ワークフローで必要な権限だけを付けている）。
+14. 「Settings」→「Rules」→「Rulesets」で、main の force push と削除を禁止する。PR の検査（`pr.yml`）を必須にするかは任意。
+15. 「Settings」→「Advanced Security」（または「Code security」）で、Secret Protection と Push protection、Dependabot alerts、Private vulnerability reporting をオンにする（公開リポジトリは無料）。脆弱性の報告の受け付け方は `SECURITY.md` に書いてある。
 
 ### 初回の公開
 
-14. 上の変更を main にマージすると、`publish.yml` が動きます（本番に manifest がないので、件数は比べません）。
-15. 成功したら、次を確かめる：
+16. 上の変更を main にマージすると、`publish.yml` が動きます（本番に manifest がないので、件数は比べません）。
+17. 成功したら、次を確かめる：
     ```bash
     swift run -c release rulestool verify --base-url https://<配信ホスト>/
     for page in / /privacy /terms /support /licenses /check; do
@@ -319,7 +328,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
     done
     curl -sI https://<配信ホスト>/v1/manifest.json.sig | grep -i 'content-type\|cache-control'
     ```
-16. App Store Connect に、プライバシーポリシーの URL（`https://<配信ホスト>/privacy`）とサポートの URL（`https://<配信ホスト>/support`）を登録する。
+18. App Store Connect に、プライバシーポリシーの URL（`https://<配信ホスト>/privacy`）とサポートの URL（`https://<配信ホスト>/support`）を登録する。
 
 ---
 

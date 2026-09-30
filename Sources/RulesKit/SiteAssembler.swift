@@ -47,6 +47,7 @@ public enum SiteAssembler {
         try prepareOutputDirectory(out)
         try fileManager.copyItem(at: site, to: out)
         removeFinderFiles(in: out)
+        try removeOperatorNotes(in: out)
         let copiedSiteFiles = countFiles(in: out)
 
         let outV1 = out.appending(path: "v1")
@@ -140,6 +141,27 @@ public enum SiteAssembler {
             }
         }
         return (kept, warnings)
+    }
+
+    /// 「運営者へ」で始まる HTML のコメント（運営者向けのメモ）を取り除く。
+    /// site/ のページには、埋め方や非公開の ios リポジトリへの参照を書いたメモがあるので、配信するページには出さない。
+    /// ほかのコメントは残す。
+    static func removeOperatorNotes(in directory: URL) throws {
+        guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: nil) else {
+            return
+        }
+        for case let url as URL in enumerator where url.pathExtension == "html" {
+            let html = try String(contentsOf: url, encoding: .utf8)
+            let stripped = stripOperatorNotes(html)
+            if stripped != html {
+                try FileIO.write(Data(stripped.utf8), to: url)
+            }
+        }
+    }
+
+    static func stripOperatorNotes(_ html: String) -> String {
+        // <!-- のあとに空白と「運営者へ」が続くコメントを、後ろの改行 1 つと一緒に消す
+        html.replacing(/<!--\s*運営者へ[\s\S]*?-->\n?/, with: "")
     }
 
     static func removeFinderFiles(in directory: URL) {

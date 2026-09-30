@@ -194,6 +194,38 @@ struct SiteAssemblerTests {
         _ = try await SiteAssembler.assemble(site: site, rules: rules, out: dist, keepPrevious: nil)
     }
 
+    @Test("運営者へのメモ（「運営者へ」で始まる HTML のコメント）は、配信するページから取り除く")
+    func removesOperatorNotes() async throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let site = try makeSite(in: root)
+        let page = """
+        <!doctype html>
+        <!--
+          運営者へ：
+          - ios リポジトリの docs/decisions.md を見てください。
+        -->
+        <html lang="ja">
+        <!-- 運営者へ：1 行のメモ --><p>本文</p>
+        <!-- ふつうのコメント -->
+        </html>
+        """
+        try write(page, to: site.appending(path: "privacy.html"))
+        let rules = root.appending(path: "out")
+        _ = try makeDistribution(in: rules, lists: [(.basic, SampleLists.basic, nil)], key: key, trusted: trusted)
+        let dist = root.appending(path: "dist")
+
+        _ = try await SiteAssembler.assemble(site: site, rules: rules, out: dist, keepPrevious: nil)
+        let served = try String(contentsOf: dist.appending(path: "privacy.html"), encoding: .utf8)
+        #expect(!served.contains("運営者へ"))
+        #expect(!served.contains("decisions.md"))
+        #expect(served.contains("<p>本文</p>"))
+        #expect(served.contains("<!-- ふつうのコメント -->"))
+        #expect(served.hasPrefix("<!doctype html>\n<html lang=\"ja\">"))
+        // site/ の元のファイルは変えない
+        #expect(try String(contentsOf: site.appending(path: "privacy.html"), encoding: .utf8) == page)
+    }
+
     @Test("site/ がなければ失敗する")
     func missingSite() async throws {
         let root = try makeTemporaryDirectory()

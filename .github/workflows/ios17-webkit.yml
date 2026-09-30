@@ -50,13 +50,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INPUT_RUN_ID: ${{ inputs.run_id }}
         run: |
+          # フォークからの PR の実行（head_branch がフォーク側の main のもの）を選ばないように、
+          # このリポジトリ自身の、main での push・定期実行・手動実行の成功だけを使う
           run_id="$INPUT_RUN_ID"
           if [ -z "$run_id" ]; then
-            run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml --branch main --status success \
-              --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            run_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?branch=main&status=success&per_page=50" \
+              --jq "[.workflow_runs[] | select(.head_repository.full_name == \"$GITHUB_REPOSITORY\" and (.event == \"push\" or .event == \"schedule\" or .event == \"workflow_dispatch\"))][0].id // empty")
           fi
           if ! [[ "$run_id" =~ ^[0-9]+$ ]]; then
             echo "::error::合成した JSON を取り出す publish.yml の実行が見つかりません（run_id を指定してください）"
+            exit 1
+          fi
+          meta=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" \
+            --jq '[.path, .event, .head_branch, .head_repository.full_name, .conclusion] | @tsv')
+          IFS=$'\t' read -r run_path run_event run_branch run_repo run_conclusion <<< "$meta"
+          case "$run_event" in push | schedule | workflow_dispatch) event_ok=true ;; *) event_ok=false ;; esac
+          if [ "$run_path" != ".github/workflows/publish.yml" ] || [ "$event_ok" != true ] || [ "$run_branch" != main ] \
+            || [ "$run_repo" != "$GITHUB_REPOSITORY" ] || [ "$run_conclusion" != success ]; then
+            echo "::error::実行 $run_id は、このリポジトリの main で成功した publish.yml の実行ではありません（$meta）"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
