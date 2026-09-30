@@ -1,0 +1,48 @@
+import Foundation
+
+/// 変換後のリストで、「resource-type が document だけの block ルール」を、トップの文書に限る
+/// （`load-context: ["top-frame"]` を足す）。
+///
+/// EasyList の `$popup` と、ブロックのルールの `$document` は、ポップアップとページそのもの
+/// （トップの文書）を止める指定。変換器はこれを `resource-type: ["document"]` にするが、
+/// iOS 17・18 の WebKit では、document は iframe の中の文書（子の文書）にも当たる
+/// （子だけ・トップだけを分ける `child-document`・`top-document` は Safari 26 から）。
+/// そのため、広告ブロック対策の仕組み（html-load.com など）の iframe まで止まり、
+/// サイトがページ全体を覆う警告を出して、本文が読めなくなる（2026-09-29 に WebKit で確認）。
+///
+/// `load-context` は Safari 16.4 から使える（変換器も `--safari-version 17` で出力に使う）。
+/// iframe を止める指定（`$subdocument`）は、変換器が `load-context: ["child-frame"]` を付けるので、
+/// ここでは触らない（load-context がすでにあるルールは変えない）。
+public enum DocumentRuleScope {
+    public struct Result: Sendable, Equatable {
+        public var data: Data
+        /// load-context を足したルールの数。
+        public var changed: Int
+    }
+
+    /// 変えるルールがなければ、`data` をそのまま返す（バイト列を変えない）。
+    /// ルールの配列として読めないときもそのまま返す（形の問題は RuleListLint が報告する）。
+    public static func restrictToTopFrame(_ data: Data) throws -> Result {
+        guard var rules = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else {
+            return Result(data: data, changed: 0)
+        }
+        var changed = 0
+        for index in rules.indices {
+            guard var trigger = rules[index]["trigger"] as? [String: Any],
+                  let action = rules[index]["action"] as? [String: Any],
+                  action["type"] as? String == "block",
+                  trigger["resource-type"] as? [String] == ["document"],
+                  trigger["load-context"] == nil
+            else { continue }
+            trigger["load-context"] = ["top-frame"]
+            rules[index]["trigger"] = trigger
+            changed += 1
+        }
+        guard changed > 0 else {
+            return Result(data: data, changed: 0)
+        }
+        // キーの順番を決めて、同じ入力からは同じバイト列（同じハッシュ）にする
+        let output = try JSONSerialization.data(withJSONObject: rules, options: [.sortedKeys, .withoutEscapingSlashes])
+        return Result(data: output, changed: changed)
+    }
+}

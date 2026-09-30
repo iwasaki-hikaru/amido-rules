@@ -75,6 +75,7 @@
 
 - Safari のコンテンツブロッカーの形式の JSON 配列（空でない）。UTF-8。
 - SafariConverterLib の ConverterTool で、`--safari-version 17` を指定して変換したもの。
+- 変換のあと、ツールが `resource-type` が `["document"]` だけで `load-context` のない block ルールに、`"load-context": ["top-frame"]` を足す（ポップアップとページそのものを止める指定が、iframe の中のページまで止めないようにするため。README の「変換器」）。そのリストは、キーを並べ替えた形で書き直す。
 
 ## 絶対に一致しないダミールール
 

@@ -117,6 +117,7 @@ swift run -c release rulestool build --help
   - swift-psl 1.1.43（`7ccee9d5…`）
 - 変換器は GPLv3 です。別のプログラムとして実行するだけで、rulestool にはリンクしません。アプリにもサイトにも含めず、配布しません。
 - 呼び出し方：`convert --safari-version 17 --advanced-blocking false --input-path <file>`。iOS 17 で使えないキーが出ないように、Safari の版を明示しています。
+- 変換のあと、`resource-type` が `document` だけの block ルールに `load-context: ["top-frame"]` を足します（`Sources/RulesKit/DocumentRuleScope.swift`）。EasyList の `$popup` と `$document` はポップアップとページそのものを止める指定ですが、変換器の出力のままだと、iOS 17・18 の WebKit では iframe の中のページにも当たります。そのため、広告ブロック対策の仕組み（html-load.com など）を使うサイトが、本文を隠して「広告の表示を許可して」という全面の警告を出していました（2026-09-29 に WebKit で確認）。足した件数は `build/out/summary.md` の「トップの文書に限った件数」に出ます。
 - CI では、ビルドした変換器をコミットごとにキャッシュします。
 
 ## CI

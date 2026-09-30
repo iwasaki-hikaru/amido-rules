@@ -296,7 +296,10 @@ public final class BuildPipeline {
                 continue
             }
 
-            let data = Data(result.safariRulesJSON.utf8)
+            // ポップアップとページそのものを止めるルールが、iframe まで止めないようにする（DocumentRuleScope）
+            let scoped = try DocumentRuleScope.restrictToTopFrame(Data(result.safariRulesJSON.utf8))
+            let data = scoped.data
+            item.topFrameDocumentRules = scoped.changed
             let lint = RuleListLint.lint(data, forbidExceptions: !config.budgets.isFirstInExtension(category))
             item.lintIssueCount = lint.issueCount
             report.errors += lint.issues.map { "\(category.rawValue)：\($0)" }

@@ -44,6 +44,8 @@ public struct BuildReport: Codable, Sendable, Equatable {
         /// manifest に載せたか（0 件のカテゴリは載せない）。
         public var included: Bool = false
         public var lintIssueCount: Int = 0
+        /// トップの文書に限った（load-context: top-frame を足した）document の block ルールの数（DocumentRuleScope）。
+        public var topFrameDocumentRules: Int?
     }
 
     public struct CompileEntry: Codable, Sendable, Equatable {
@@ -104,13 +106,14 @@ public struct BuildReport: Codable, Sendable, Equatable {
         if !categories.isEmpty {
             lines.append("### カテゴリ")
             lines.append("")
-            lines.append("| カテゴリ | 拡張 | 入力の行数 | 変換後の件数 | バイト数 | 変換エラー | manifest |")
-            lines.append("|---|---|---:|---:|---:|---:|---|")
+            lines.append("| カテゴリ | 拡張 | 入力の行数 | 変換後の件数 | バイト数 | 変換エラー | トップの文書に限った件数 | manifest |")
+            lines.append("|---|---|---:|---:|---:|---:|---:|---|")
             for category in categories {
                 let converted = category.converter.map { Formatting.count($0.safariRulesCount) } ?? "-"
                 let errorsCount = category.converter.map { Formatting.count($0.errorsCount) } ?? "-"
                 let bytes = category.bytes > 0 ? Formatting.bytes(category.bytes) : "-"
-                lines.append("| \(category.category) | \(category.extensionName ?? "-") | \(Formatting.count(category.inputRuleLines)) | \(converted) | \(bytes) | \(errorsCount) | \(category.included ? "`\(category.file ?? "")`" : "載せない") |")
+                let scoped = category.topFrameDocumentRules.map { Formatting.count($0) } ?? "-"
+                lines.append("| \(category.category) | \(category.extensionName ?? "-") | \(Formatting.count(category.inputRuleLines)) | \(converted) | \(bytes) | \(errorsCount) | \(scoped) | \(category.included ? "`\(category.file ?? "")`" : "載せない") |")
             }
             lines.append("")
         }
