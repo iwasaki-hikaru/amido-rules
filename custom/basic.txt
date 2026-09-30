@@ -11,3 +11,126 @@
 ! 例：
 ! ! 根拠: https://example.jp/article/123 (2026-10-01)
 ! example.jp##.ad-banner
+
+! ---- Yahoo! JAPAN（yads。EasyList は yads-async.js を @@ で許可しているので、枠を隠すしかない）
+! 根拠: https://www.yahoo.co.jp/ (2026-09-29)
+! 観察: m.yahoo.co.jp の HTML に data-yads 属性の枠 3 件（#prem-ad・PRAds・#ad-popup-feedback）。中で yads.c.yimg.jp/js/yads-async.js を読む
+yahoo.co.jp##[data-yads]
+! 根拠: https://news.yahoo.co.jp/articles/7a1df606f2d796e4b8220fb073cf6e88e4a38009 (2026-09-29)
+! 観察: div#yads_23796_787969・#yads_30982_5461（yads の枠。番号は変わるので前方一致）
+yahoo.co.jp##div[id^="yads_"]
+! 根拠: https://news.yahoo.co.jp/articles/7a1df606f2d796e4b8220fb073cf6e88e4a38009 (2026-09-29)
+! 観察: #wrapper の最初の子 div#yadssph。中身は yads の枠だけ
+news.yahoo.co.jp###yadssph
+! 根拠: https://news.yahoo.co.jp/articles/7a1df606f2d796e4b8220fb073cf6e88e4a38009 (2026-09-29)
+! 観察: 記事の間の div.yads_article_infeed_item 11 件（article.js が AD_INFEED 型の項目にだけ付ける）
+news.yahoo.co.jp##.yads_article_infeed_item
+! 根拠: https://news.yahoo.co.jp/articles/7a1df606f2d796e4b8220fb073cf6e88e4a38009 (2026-09-29)
+! 観察: div#yads_21732_270490.yads_stb_item（article.js が AD_STB 型にだけ付ける）
+news.yahoo.co.jp##.yads_stb_item
+! 根拠: https://m.yahoo.co.jp/ (2026-09-29)
+! 観察: aside.FixedBanner_Wrap > div#ad-fixed-banner[data-rma-pos="SPBP-fixedBanner"]（画面の下に固定する広告の枠）
+m.yahoo.co.jp###ad-fixed-banner
+! 根拠: https://www.yahoo.co.jp/ (2026-09-29)
+! 観察: div#overlayAdsContainer（スマホ版は #overlayAdArea、PC 版は #OVERLAY。PC の bundle が yads_parent_element:"OVERLAY" で yads を呼ぶ）
+www.yahoo.co.jp,m.yahoo.co.jp###overlayAdsContainer
+! 根拠: https://www.yahoo.co.jp/ (2026-09-29)
+! 観察: PC 版の div#TPR > #ssp_ydn_67374_842217 と yads-async.js・yadsRenderAd_v2
+www.yahoo.co.jp###TPR
+! 根拠: https://www.yahoo.co.jp/ (2026-09-29)
+! 観察: PC 版の div#TBP > #ssp_ydn_82399_269466 > iframe[title="Ad Content"]
+www.yahoo.co.jp###TBP
+! 根拠: https://s.yimg.jp/images/yjtop-pc/orion/20260928-055155/bundle_20260928-055155.js (2026-09-29)
+! 観察: PC 版のトップの記事一覧で、getAdId が "STREAMAD"+n の枠を作る（13 件）
+www.yahoo.co.jp##div[id^="STREAMAD"]
+! ---- tenki.jp（GPT は EasyList で止まるが、空の枠の高さと余白が残る）
+! 根拠: https://tenki.jp/ (2026-09-29)
+! 観察: div#tenki-ad-SM_north など（googletag.display の対象。lite 版 7 件、PC 版 12 件）
+tenki.jp##div[id^="tenki-ad-"]
+! 根拠: https://tenki.jp/ (2026-09-29)
+! 観察: PC 版の common/ad-skyscraper.html の div.tenki-ad-skyscraper-wrapper（中は GPT の枠だけ）
+tenki.jp##.tenki-ad-skyscraper-wrapper
+! 根拠: https://tenki.jp/ (2026-09-29)
+! 観察: PC 版の div#taboola-below-article-thumbnails-desktop-1 と window._taboola.push（EasyList は lite 用の id だけ隠す）
+tenki.jp###taboola-below-article-thumbnails-desktop-1
+! ---- クラシル・デリッシュキッチン（GPT の外側の枠が空白として残る）
+! 根拠: https://www.kurashiru.com/recipes/1258d283-820f-496c-9f86-41a445f6b93a (2026-09-29)
+! 観察: div.browsi_component_ads（min-height:280px、中身は div-gpt-ad だけ。1 ページに 8 件）。ほかの browsi_* クラスは広告ではないので広げない
+kurashiru.com##.browsi_component_ads
+! 根拠: https://delishkitchen.tv/recipes/152835326732140963 (2026-09-29)
+! 観察: aside.ads-recipe > .ad-box > .delish-gam-ad > div-gpt-ad（2 件）
+delishkitchen.tv##aside.ads-recipe
+! 根拠: https://delishkitchen.tv/recipes/152835326732140963 (2026-09-29)
+! 観察: aside.gm-ad-top・gm-ad-recipe-banner・gm-ad-recipe-bottom など 5 件。どれも GAM の枠を包むだけ
+delishkitchen.tv##aside[class^="gm-ad-"]
+! ---- GameWith
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-29)
+! 観察: div.walkthrough-ad-ranking-game（「GameWithからのおすすめ」「PR」の表示、375×845）
+gamewith.jp##.walkthrough-ad-ranking-game
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-29)
+! 観察: div.c-sp-leaderboard-ad.ad-sp-header（空の広告枠、min-height 50px）
+gamewith.jp##.c-sp-leaderboard-ad
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-29)
+! 観察: div.c-sp-leaderboard-ad-overlay（GPT の sp_bottom_native の枠だけを包む）
+gamewith.jp##.c-sp-leaderboard-ad-overlay
+! 根拠: https://gamewith.jp/switch/article/show/13 (2026-09-29)
+! 観察: div.gamedb-steam-ad（gtm-ga4-module-type="記事中ストア広告"、「AD」のバッジ）
+gamewith.jp##.gamedb-steam-ad
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-29)
+! 観察: 攻略記事ランキングの中の div._native_ad_item（中身は j.zucks.net.zimg.jp のスクリプトだけ）。親の ol.dfp-ad-ranking は本物のランキングなので隠さない
+gamewith.jp##._native_ad_item
+! 根拠: https://rise.enhance.co.jp/adu.js?id=ADU-8DHY29K7 (2026-09-29)
+! 観察: gamewith.jp の記事に <!-- Rise Tag --> と div#ads-ADU-8DHY29K7。adu.js がこの要素に広告ユニット（VAST 動画を含む）を描画する
+gamewith.jp##div[id^="ads-ADU-"]
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-30)
+! 観察: 「GameWithからのおすすめ」「PR」の枠（div.walkthrough-ad-ranking-game[data-nosnippet]）の中のリンクに utm_adgroup=gwranking。描画のあとは Ad Shield がクラス名を書き換えるので、属性とリンクで指定する。ほかの div[data-nosnippet] には当たらない
+gamewith.jp##div[data-nosnippet]:has(a[href*="utm_adgroup=gwranking"])
+! 根拠: https://gamewith.jp/pokemon-sv/article/show/375523 (2026-09-30)
+! 観察: 画面の下に固定される広告の枠 div.c-sp-leaderboard-ad-overlay.js-target-hideonfocuskeyboard（.to-btn-area の子。中は GPT の sp_bottom_native だけ）。描画のあとは Ad Shield が c-sp-leaderboard-ad-overlay を書き換えるので、残るクラスで指定する。同じクラスは、ほかのページで「ページの先頭へ」のボタン（a.to-btn--top、.to-btn-area の孫）にも付くので、.to-btn-area の直下の div に限る（攻略記事 6 本・機種別のページ 5 本で確認）
+gamewith.jp##.to-btn-area > div.js-target-hideonfocuskeyboard
+! ---- Game8
+! 根拠: https://game8.jp/pokemon-sv/458124 (2026-09-29)
+! 観察: 見出し「…おすすめ【PR】」の直後の div#g8-ad-placement-sp_under_archive_ab（min-height 1010px、ブラウザゲームの広告）
+game8.jp##div[id^="g8-ad-placement-sp_under_archive"]
+! 根拠: https://game8.jp/pokemon-sv/458124 (2026-09-29)
+! 観察: h2[data-track-mario-keyword="affiliate"]（「…おすすめ【PR】」の見出し。ほかのキーワード値には当たらない）
+game8.jp##h2[data-track-mario-keyword="affiliate"]
+! 根拠: https://game8.jp/pokemon-sv/458124 (2026-09-30)
+! 観察: 「…おすすめ【PR】」の見出しの直後の div（HTML では #g8-ad-placement-sp_under_archive_ab。描画のあとは Ad Shield が id を乱数の名前に書き換えるので、見出しとの位置で指定する）。370×1010 のブラウザゲームの広告。その次の見出し「人気記事」には当たらない
+game8.jp##h2[data-track-mario-keyword="affiliate"] + div
+! 根拠: https://game8.jp/pokemon-sv/458124 (2026-09-29)
+! 観察: div#ads-ADU-6N3Z9A4T と rise.enhance.co.jp/adu.js（gamewith.jp と同じ仕組み）
+game8.jp##div[id^="ads-ADU-"]
+! ---- ライブドアニュース（GPT の外側の枠が空白として残る）
+! 根拠: https://news.livedoor.com/topics/detail/32396026/ (2026-09-29)
+! 観察: div.ads-google300（min-height 300px、中は GPT の topics_video・topics_middle など。記事に 4 件）
+news.livedoor.com##.ads-google300
+! 根拠: https://news.livedoor.com/topics/detail/32396026/ (2026-09-29)
+! 観察: div.topics_ad（GPT の text_top・text_bottom を包む。2 件）
+news.livedoor.com##.topics_ad
+! 根拠: https://news.livedoor.com/ (2026-09-29)
+! 観察: div.ads-sp-top-app（GPT の top_app を包む）
+news.livedoor.com##.ads-sp-top-app
+! 根拠: https://news.livedoor.com/ (2026-09-29)
+! 観察: div#taboola-below-home-thumbnails-mobile と window._taboola.push（EasyList にこの id はない）
+news.livedoor.com###taboola-below-home-thumbnails-mobile
+
+! ---- 日本の広告配信（EasyList では止まっていない。EasyPrivacy には同じ種類のルールがあるが、basic は EasyList だけ）
+! 根拠: https://tenki.jp/lite/ (2026-09-29)
+! 観察: <script async src="https://cdn.gmossp-sp.jp/js/async/g944072/gc.js"> と div.gmossp_core_g944072。gc.js の先頭は GMO NIKKO Inc. の著作権表示で、zone_id・ad_size "300x250"・min_cpm の設定を持つ。Prebid の gmosspBidAdapter の入札先も sp.gmossp-sp.jp
+||gmossp-sp.jp^$third-party
+! 根拠: https://www.kurashiru.com/ (2026-09-29)
+! 観察: <!-- Flux head --> と flux-cdn.com/client/00004/kurashiru_1142.min.js・window.pbjs。game8.jp 用の game8.min.js は Prebid.js を含み、各 SSP の入札先（sp.gmossp-sp.jp・pb.ladsp.com など）が書かれている。gamewith.jp・itmedia.co.jp・ameblo.jp も読む
+||flux-cdn.com^$third-party
+! 根拠: https://github.com/prebid/Prebid.js/blob/master/modules/logicadBidAdapter.js (2026-09-29)
+! 観察: Logicad の入札先は pb.ladsp.com/adrequest/prebid。はてなブログの広告のスクリプト（cdn.pool.st-hatena.com/valve/valve.js）が、ここへ入札を送る。logicad.com 自身も cd.ladsp.com のタグを読む
+||ladsp.com^$third-party
+! 根拠: https://ameblo.jp/minnadewaraumikan/entry-12979983865.html (2026-09-29)
+! 観察: static.criteo.net/js/ld/publishertag.js を読み、Criteo.SetLineItemRanges（入札の価格帯）を呼ぶ。Prebid の Criteo アダプタも同じ場所から広告の描画用のスクリプトを読む。広告主の側のタグ（ld.js）は対象にしない
+||static.criteo.net/js/ld/publishertag.$script,third-party
+! 根拠: https://cache1.nipc.jp/m/mod/js/mobile.js (2026-09-29)
+! 観察: 日刊スポーツの全ページが読むスクリプトの「// CAインタースティシャル」の下で、ca_profitx_ad_container の枠を作り cdn.caprofitx.com/media/4456/pfx.js を入れる。https://caprofitx.jp/ はサイバーエージェントのインフィード広告の SSP
+||cdn.caprofitx.com^$third-party
+! 根拠: https://www.nikkansports.com/ (2026-09-29)
+! 観察: gpt.js と apstag.js のすぐ後に <script id="dm-script" src="https://tag.durationmedia.net/sites/11524/dm.js">。https://www.nikkansports.com/ads.txt に durationmedia.net の DIRECT の行（広告枠の販売者）。dm.js の中身は取れていない
+||tag.durationmedia.net^$third-party
