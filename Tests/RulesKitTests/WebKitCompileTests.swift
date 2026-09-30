@@ -24,6 +24,15 @@ struct WebKitCompileTests {
         _ = try await CompileChecker.compile(joined)
     }
 
+    @Test("トップの文書に限ったルール（DocumentRuleScope の出力）はコンパイルできる")
+    func topFrameDocumentRuleCompiles() async throws {
+        let converted = #"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?html-load\\.com[/:]","resource-type":["document"]},"action":{"type":"block"}},{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"block"}}]"#
+        let scoped = try DocumentRuleScope.restrictToTopFrame(Data(converted.utf8))
+        #expect(scoped.changed == 2)
+        #expect(RuleListLint.lint(scoped.data, forbidExceptions: false).isValid)
+        _ = try await CompileChecker.compile(scoped.data)
+    }
+
     @Test("空配列はコンパイルに失敗する（WKErrorDomain 6）")
     func emptyArrayFails() async {
         do {

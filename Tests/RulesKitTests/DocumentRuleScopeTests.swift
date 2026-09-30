@@ -25,6 +25,10 @@ struct DocumentRuleScopeTests {
     @Test("ほかのルールは変えない", arguments: [
         // iframe を止めるルール（$subdocument）：変換器が child-frame を付ける
         #"{"trigger":{"url-filter":"&subaffid=%","load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}}"#,
+        // $popup,subdocument：document に child-frame が付いた形
+        #"{"trigger":{"url-filter":"\/earn\.php\?z=","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}"#,
+        // $~subdocument：変換器がすでに top-frame を付けた形
+        #"{"trigger":{"url-filter":"ads","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}"#,
         // document とほかの種類の組み合わせ
         #"{"trigger":{"url-filter":"ads","resource-type":["document","script"]},"action":{"type":"block"}}"#,
         // 種類の指定なし

@@ -4,15 +4,21 @@ import Foundation
 /// （`load-context: ["top-frame"]` を足す）。
 ///
 /// EasyList の `$popup` と、ブロックのルールの `$document` は、ポップアップとページそのもの
-/// （トップの文書）を止める指定。変換器はこれを `resource-type: ["document"]` にするが、
-/// iOS 17・18 の WebKit では、document は iframe の中の文書（子の文書）にも当たる
-/// （子だけ・トップだけを分ける `child-document`・`top-document` は Safari 26 から）。
+/// （トップの文書）を止める指定（ABP・uBlock Origin・AdGuard の定義。iframe は `$subdocument`）。
+/// 変換器はこれを `resource-type: ["document"]` にするが、WebKit の document は、トップの文書にも
+/// iframe の中の文書（子の文書）にも当たる。iOS 17・18 だけでなく、`top-document`・`child-document` が
+/// 入った Safari 26 でも、document は両方に当たる。
 /// そのため、広告ブロック対策の仕組み（html-load.com など）の iframe まで止まり、
 /// サイトがページ全体を覆う警告を出して、本文が読めなくなる（2026-09-29 に WebKit で確認）。
 ///
-/// `load-context` は Safari 16.4 から使える（変換器も `--safari-version 17` で出力に使う）。
+/// `load-context` は Safari 15・iOS 15 から使える（WebKit 235790@main）。Apple 自身の変換
+/// （Web 拡張の declarativeNetRequest の main_frame）も、document ＋ top-frame にしている。
 /// iframe を止める指定（`$subdocument`）は、変換器が `load-context: ["child-frame"]` を付けるので、
 /// ここでは触らない（load-context がすでにあるルールは変えない）。
+///
+/// 副作用：`third-party` や `if-domain` と組み合わさったもの（今の EasyList で 88 件）は、WebKit がトップの文書を
+/// それ自身のページとして扱うため、トップの文書では当たらなくなる。これらはもともとポップアップを止めておらず、
+/// iframe だけを止めていたので、ポップアップの防ぎ方は変わらない。
 public enum DocumentRuleScope {
     public struct Result: Sendable, Equatable {
         public var data: Data
