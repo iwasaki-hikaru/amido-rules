@@ -75,7 +75,7 @@ jobs:
       - name: 環境を記録する
         run: |
           if [ ! -d "$DEVELOPER_DIR" ]; then
-            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
+            echo "::error::Xcode 26.6 がありません（${DEVELOPER_DIR}）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
             exit 1
           fi
           sw_vers
@@ -248,7 +248,7 @@ jobs:
       - name: 環境を確かめる
         run: |
           if [ ! -d "$DEVELOPER_DIR" ]; then
-            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）"
+            echo "::error::Xcode 26.6 がありません（${DEVELOPER_DIR}）"
             exit 1
           fi
           xcodebuild -version
@@ -394,7 +394,7 @@ jobs:
             if [ "$existing" = "$GITHUB_SHA" ]; then
               echo "タグ $tag は、このジョブの前の試行で作ったものです（やり直し）"
             else
-              echo "::error::版 $PUBLISHED_VERSION のタグ（$tag）がすでにあります。build ジョブからやり直してください"
+              echo "::error::版 $PUBLISHED_VERSION のタグ（${tag}）がすでにあります。build ジョブからやり直してください"
               exit 1
             fi
           fi
@@ -431,13 +431,13 @@ jobs:
           }
           for attempt in 1 2 3 4 5 6; do
             if check; then
-              echo "本番で検証できました（版 $PUBLISHED_VERSION）"
+              echo "本番で検証できました（版 ${PUBLISHED_VERSION}）"
               exit 0
             fi
             echo "まだ検証できません（$attempt 回目）。20 秒後に取り直します"
             sleep 20
           done
-          echo "::error::公開した版（$PUBLISHED_VERSION）を本番で検証できません"
+          echo "::error::公開した版（${PUBLISHED_VERSION}）を本番で検証できません"
           exit 1
 
       - name: 検証に失敗したら、前の版に戻す

@@ -51,7 +51,7 @@ if not iphones:
 print(runtime["identifier"], iphones[0])
 ' "$version") || { echo "✘ iOS $version のシミュレーターのランタイムがありません" >&2; xcrun simctl list runtimes >&2; exit 1; }
 
-echo "▶ シミュレーターを作ります（$runtime、$devicetype）" >&2
+echo "▶ シミュレーターを作ります（${runtime}、${devicetype}）" >&2
 device=$(xcrun simctl create "ios-webkit-check-$$" "$devicetype" "$runtime")
 xcrun simctl boot "$device"
 xcrun simctl bootstatus "$device" -b >/dev/null

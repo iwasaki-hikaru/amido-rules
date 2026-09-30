@@ -67,7 +67,7 @@ jobs:
           case "$run_event" in push | schedule | workflow_dispatch) event_ok=true ;; *) event_ok=false ;; esac
           if [ "$run_path" != ".github/workflows/publish.yml" ] || [ "$event_ok" != true ] || [ "$run_branch" != main ] \
             || [ "$run_repo" != "$GITHUB_REPOSITORY" ] || [ "$run_conclusion" != success ]; then
-            echo "::error::実行 $run_id は、このリポジトリの main で成功した publish.yml の実行ではありません（$meta）"
+            echo "::error::実行 $run_id は、このリポジトリの main で成功した publish.yml の実行ではありません（${meta}）"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"

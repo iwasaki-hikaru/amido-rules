@@ -38,7 +38,7 @@ jobs:
       - name: 環境を記録する
         run: |
           if [ ! -d "$DEVELOPER_DIR" ]; then
-            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
+            echo "::error::Xcode 26.6 がありません（${DEVELOPER_DIR}）。ランナーのイメージが変わった可能性があります。docs/runbook.md を参照"
             exit 1
           fi
           sw_vers

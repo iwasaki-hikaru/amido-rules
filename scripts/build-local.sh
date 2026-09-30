@@ -84,7 +84,7 @@ if [ "$dev_sign" = true ]; then
   mkdir -p .local
   chmod 700 .local
   if [ ! -f "$key_file" ]; then
-    echo "▶ 開発用の鍵を作ります：$key_file（本番では使わない）" >&2
+    echo "▶ 開発用の鍵を作ります：${key_file}（本番では使わない）" >&2
     public_key=$("$rulestool" keygen --out "$key_file")
     printf '{"keys":[{"id":"dev","publicKey":"%s"}]}\n' "$public_key" > "$keys_file"
   elif [ ! -f "$keys_file" ]; then

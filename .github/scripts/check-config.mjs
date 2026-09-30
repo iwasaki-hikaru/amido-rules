@@ -300,6 +300,30 @@ function checkTrustedKeys() {
   ok(before, `${file}：公開されている鍵は入っていません`);
 }
 
+// --- 6. シェルのスクリプト ---
+// macOS の bash 3.2 は、UTF-8 の設定のとき、全角文字の先頭のバイトを英字として扱う。
+// そのため「$host）」のように、変数のすぐ後ろに全角文字があると、変数名の一部と読まれて失敗する
+// （set -u なら unbound variable、そうでなければ空になる）。「${host}）」のように波かっこで囲む。
+function checkShellVariables() {
+  const before = failures;
+  const files = [];
+  for (const dir of [".github/scripts", "scripts", ".github/workflows"]) {
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir)) {
+      if (/\.(sh|ya?ml)$/.test(name)) files.push(join(dir, name));
+    }
+  }
+  for (const file of files) {
+    readFileSync(file, "utf8").split("\n").forEach((line, index) => {
+      const match = /\$([A-Za-z_][A-Za-z0-9_]*)[^\x00-\x7F]/.exec(line);
+      if (match) {
+        error(file, `${index + 1} 行目：$${match[1]} のすぐ後ろに全角文字があります。\${${match[1]}} と波かっこで囲んでください（macOS の bash が変数名の一部と読むため）`);
+      }
+    });
+  }
+  ok(before, `シェルのスクリプト：変数の書き方に問題はありません（${files.length} ファイル）`);
+}
+
 // --- 4. deploy/ ---
 function checkDeploy() {
   const before = failures;
@@ -331,6 +355,7 @@ checkHeaders();
 checkHtml();
 checkDeploy();
 checkTrustedKeys();
+checkShellVariables();
 
 if (failures > 0) {
   console.error(`問題が ${failures} 件あります`);

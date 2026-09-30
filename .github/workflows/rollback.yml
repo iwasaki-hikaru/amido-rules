@@ -80,7 +80,7 @@ jobs:
             exit 1
           fi
           if [ ! -d "$DEVELOPER_DIR" ]; then
-            echo "::error::Xcode 26.6 がありません（$DEVELOPER_DIR）"
+            echo "::error::Xcode 26.6 がありません（${DEVELOPER_DIR}）"
             exit 1
           fi
 
@@ -119,7 +119,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          message="公開し直し：$RELEASE_TAG${REASON:+（$REASON）}"
+          message="公開し直し：$RELEASE_TAG${REASON:+（${REASON}）}"
           ./node_modules/.bin/wrangler deploy --config ../wrangler.jsonc --message "${message:0:120}"
 
       - name: wrangler rollback で戻す

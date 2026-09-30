@@ -18,7 +18,7 @@ if [ ! -d "$DIR/.git" ]; then
 fi
 actual=$(git -C "$DIR" rev-parse HEAD)
 if [ "$actual" != "$COMMIT" ]; then
-  echo "✘ $TAG のコミットが想定と違います（想定：$COMMIT、実際：$actual）。タグが動かされた可能性があります。" >&2
+  echo "✘ $TAG のコミットが想定と違います（想定：${COMMIT}、実際：${actual}）。タグが動かされた可能性があります。" >&2
   exit 1
 fi
 

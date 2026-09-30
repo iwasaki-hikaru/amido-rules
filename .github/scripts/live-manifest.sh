@@ -17,7 +17,7 @@ out=$2
 rm -f "$out"
 
 if [ -z "$host" ] || [[ "$host" == *PLACEHOLDER* ]]; then
-  echo "配信ホストが仮の値なので、本番の manifest は取得しません（$host）" >&2
+  echo "配信ホストが仮の値なので、本番の manifest は取得しません（${host}）" >&2
   echo absent
   exit 0
 fi
@@ -41,12 +41,12 @@ case "$code" in
     ;;
   404 | 410)
     rm -f "$tmp"
-    echo "本番の manifest はまだありません（HTTP $code）：$url" >&2
+    echo "本番の manifest はまだありません（HTTP ${code}）：$url" >&2
     echo absent
     ;;
   *)
     rm -f "$tmp"
-    echo "本番の manifest を取得できません（HTTP $code）：$url" >&2
+    echo "本番の manifest を取得できません（HTTP ${code}）：$url" >&2
     exit 1
     ;;
 esac
