@@ -1,0 +1,61 @@
+/* 見本のページ（App Store のスクリーンショット用）。広告の枠は .cb-check-basic（基本）と .cb-check-annoyance（プラス）で、
+   配信しているルールがこのサイトでだけ隠す（動作確認のページと同じしくみ） */
+.demo-banner {
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+.demo-article h1 {
+  font-size: 1.45rem;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.demo-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.demo-photo {
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f6c177 0%, #e07a5f 45%, #81b29a 100%);
+  margin: 12px 0;
+}
+.demo-photo.recipe {
+  background: linear-gradient(135deg, #5b3a5a 0%, #8e5572 40%, #f2d0a4 100%);
+}
+.demo-ad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: repeating-linear-gradient(45deg, #d9dde2, #d9dde2 10px, #e6e9ed 10px, #e6e9ed 20px);
+  color: #4a525b;
+  border: 1px solid #b9c0c8;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-align: center;
+  margin: 16px auto;
+}
+.demo-ad small {
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+.demo-ad.banner { height: 100px; }
+.demo-ad.rect { height: 250px; max-width: 300px; }
+.demo-ad.sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px;
+  margin: 0;
+  border-radius: 0;
+  z-index: 10;
+}
+.demo-steps li + li { margin-top: 8px; }
+.demo-ingredients { columns: 2; padding-left: 1.2em; }
