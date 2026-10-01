@@ -281,7 +281,7 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 1. アカウントを作る。
 2. 管理画面の「Workers & Pages」で、workers.dev のサブドメインを一度作る（作らないと、CI からデプロイできない）。
 3. Worker の名前を決める（英小文字・数字・ハイフン、63 文字まで、先頭と末尾はハイフン以外）。**サブドメインと名前は、アプリの公開後に変えられません**（README の「workers.dev を使うことのリスク」）。
-4. API トークンを作る：「My Profile」→「API Tokens」→「Create Custom Token」→ 権限は **Account → Workers Scripts → Edit** だけ、対象はこのアカウントだけ。アカウント ID も控える。
+4. API トークンを作る：**アカウントの API トークン**（ユーザーに結びつかず、CI に向く。Cloudflare の資料「Account API tokens」）にする。「Manage account」→「Account API tokens」→「Create Token」→ 権限は **Account → Workers Scripts → Edit** だけ。アカウント ID も控える（「Workers & Pages」の右側の「Account details」）。
    - 「User Details」「Memberships」などの読み取り権限は付けない（付けると、認証に失敗したときの wrangler の出力に、アカウントのメールが出ることがある。このリポジトリの Actions のログは誰でも読める）。
    - 有効期限（TTL）を付け、期限の前に作り直す。手元で使うトークンは別に作り、使い終わったら無効にする。
    - できれば、このアプリ専用の Cloudflare アカウントにする（Workers Scripts の権限は、アカウントの中のすべての Worker に効くため）。アカウントの 2 段階認証は、セキュリティキーかパスキーにする。アカウント名にメールアドレスが入っていたら、入らない名前に変える。
