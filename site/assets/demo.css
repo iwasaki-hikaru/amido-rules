@@ -1,5 +1,7 @@
 /* 見本のページ（App Store のスクリーンショット用）。広告の枠は .cb-check-basic（基本）と .cb-check-annoyance（プラス）で、
-   配信しているルールがこのサイトでだけ隠す（動作確認のページと同じしくみ） */
+   配信しているルールがこのサイトでだけ隠す（動作確認のページと同じしくみ）。
+   demo/social.html の SNS のボタン・通知の案内・アプリの案内は、Fanboy の汎用のルール（プラス）に当たるクラス名と id で隠れる。
+   見た目用のクラス（demo-sns・demo-prompt・demo-appcta など）には、「ad」「share」「social」などを使わない（前からある .demo-banner は、2026-10-01 の basic と annoyance で隠れないことを確かめた） */
 .demo-banner {
   background: var(--note-bg);
   border: 1px solid var(--note-border);
@@ -59,3 +61,100 @@
 }
 .demo-steps li + li { margin-top: 8px; }
 .demo-ingredients { columns: 2; padding-left: 1.2em; }
+
+/* demo/social.html（プレミアムの見本） */
+.demo-photo.festival {
+  background: linear-gradient(135deg, #3d405b 0%, #e07a5f 50%, #f2cc8f 100%);
+}
+.demo-snspage {
+  padding-bottom: 96px;
+}
+.demo-sns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.demo-sns-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  width: 100%;
+}
+.demo-sns-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.demo-sns-btn.primary {
+  background: var(--link);
+  border-color: var(--link);
+  color: var(--bg);
+}
+.demo-follow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.demo-follow p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+/* 「見本」の帯を隠さないように、画面の上ではなく中ほどに出す */
+.demo-prompt {
+  position: fixed;
+  top: 40%;
+  left: 12px;
+  right: 12px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 20;
+}
+.demo-prompt p {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+.demo-prompt .demo-prompt-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+.demo-prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.demo-appcta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  z-index: 10;
+}

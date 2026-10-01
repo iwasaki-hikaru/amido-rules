@@ -1,8 +1,16 @@
-! 自作ルール：annoyance（不快広告）・プレミアム
+! 自作ルール：annoyance（迷惑な表示）・プレミアム
+!
+! annoyance のカテゴリは、Fanboy's Social Blocking List と Fanboy's Notifications List（sources.yml）と、
+! このファイルを 1 つにつないで、1 回で変換する。このファイルには、自作のルールと、Fanboy のリストから外すための例外（#@#）を書く。
+!
+! 隠すもの：SNS の共有・いいね・フォローのボタンやウィジェット、「通知を受け取りますか」などの案内、アプリへの誘導の表示。
+! 隠さない方針のもの：同意のダイアログ、ログイン、有料記事の案内、コメント欄、年齢確認、アフィリエイトの表示（広告であることの表示）。
+!   Fanboy のリストに、これらを隠すルールがあれば、下の「Fanboy のリストから外すもの」に例外を書く。
 !
 ! 書式：AdGuard / Adblock Plus の形式。
 ! 決まり：各ルールのすぐ上に、根拠を「! 根拠: <確認した URL> (<YYYY-MM-DD>)」の形で書く。
-!   根拠のないルールがあると、ツールが失敗します。
+!   根拠の行には、URL と (日付) だけを書く。説明は別の行（「! 理由:」「! 観察:」など）に書く。
+!   根拠のないルールがあると、ツールが失敗します。例外の行（#@#）にも、1 行ごとに根拠が要ります。
 !   ライセンス上使えないリスト（280blocker など）から写さないこと。
 ! ライセンス：CC BY-SA 3.0（LICENSE-rules を参照）
 !
@@ -11,3 +19,26 @@
 ! 例：
 ! ! 根拠: https://example.jp/article/123 (2026-10-01)
 ! example.jp##.ad-banner
+
+! ---- Fanboy のリストから外すもの（プレミアムで約束する範囲の外）
+! 根拠: https://secure.fanboy.co.nz/fanboy-notifications.txt (2026-10-01)
+! 理由: すべてのサイトで、同意のダイアログ（#grow-consent-modal）を隠すルール。同意の画面は隠さない
+#@##grow-consent-modal
+! 根拠: https://secure.fanboy.co.nz/fanboy-notifications.txt (2026-10-01)
+! 理由: dawn.com の同意のダイアログ（#consent-dialog）を隠すルール
+dawn.com#@##consent-dialog
+! 根拠: https://secure.fanboy.co.nz/fanboy-notifications.txt (2026-10-01)
+! 理由: livemint.com のログインの案内（#signInPopUp）を隠すルール
+livemint.com#@##signInPopUp
+! 根拠: https://secure.fanboy.co.nz/fanboy-notifications.txt (2026-10-01)
+! 理由: consumerreports.org の有料記事の案内（#mtRoundupPaywallPopup）を隠すルール
+consumerreports.org#@##mtRoundupPaywallPopup
+! 根拠: https://secure.fanboy.co.nz/fanboy-notifications.txt (2026-10-01)
+! 理由: fanblogs.jp の .aff-notice（アフィリエイトの表示と思われる要素）を隠すルール。広告であることの表示は隠さない
+fanblogs.jp#@#.aff-notice
+! 根拠: https://secure.fanboy.co.nz/fanboy-social.txt (2026-10-01)
+! 理由: yahoo.com のコメント欄（.caas-comment）を隠すルール
+yahoo.com#@#.caas-comment
+! 根拠: https://secure.fanboy.co.nz/fanboy-social.txt (2026-10-01)
+! 理由: salon.com・snopes.com のコメント欄（.social_comments_app_wrapper）を隠すルール
+salon.com,snopes.com#@#.social_comments_app_wrapper

@@ -28,6 +28,10 @@
    - 警告は、内容を読んで、放っておいてよいかを判断します（例：「拡張 basic の件数が警告の値を超えています」が続くなら、[予算を超えそうなとき](#予算を超えそうなとき)）。
 3. 失敗していたら、「週 1 回のルールの公開が失敗しました」という issue ができています。[公開が失敗したとき](#公開が失敗したとき)の手順で対応します。
    - 失敗しても、本番には前の版がそのまま残っています。利用者への影響は「ルールの更新が止まる」だけです。
+4. 月に 1 回くらい、上流のリストの先頭の行を確かめます。`report.json`（実行の artifact「rules-out」）の各ソースの `headerLines` に、ライセンス・版・更新日の行が記録されています。
+   - 対象：EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List。
+   - `License`・`Licence` の行が変わっていたら、[licensing.md](licensing.md) を見直します。見直すまでは、そのソースを `sources.yml` で `enabled: false` にすることも考えます（件数が大きく変わるので、[件数の変化で CI が止まったとき](#件数の変化で-ci-が止まったとき)の手順で許可する）。
+   - 2026-10-01 の時点：EasyList は `! Licence: https://easylist.to/pages/licence.html`、Fanboy の 2 つは `! License: http://creativecommons.org/licenses/by/3.0/`。
 
 ### 2. 定期実行が止まっていないかを確かめる
 
@@ -39,7 +43,8 @@
   gh workflow enable publish.yml --repo <owner>/<rules リポジトリ>
   ```
 - 直近の `schedule` の実行が、毎週あるかも確かめる。
-- 参考：本番の manifest の `published_at` は、ルールが変わったときだけ新しくなります。上流（EasyList）はほぼ毎日更新されるので、ふつうは毎週変わりますが、止まっているかどうかは Actions の実行の履歴で確かめてください。
+- 参考：本番の manifest の `published_at` は、ルールが変わったときだけ新しくなります。上流（EasyList はほぼ毎日、Fanboy の 2 つのリストは数日ごと）が更新されるので、ふつうは毎週変わりますが、止まっているかどうかは Actions の実行の履歴で確かめてください。
+- 利用者に新しいルールが届くのは、この週 1 回の公開（と、main への push での公開）のときです。上流が数日ごとに更新されても、届くのは週 1 回です。
   ```bash
   curl -s https://<配信ホスト>/v1/manifest.json | jq '{version, published_at}'
   ```
@@ -61,7 +66,7 @@
 | ファイル | カテゴリ | 入る拡張 | 書いてよいもの |
 |---|---|---|---|
 | `custom/basic.txt` | basic（無料） | 基本 | 広告のブロック、basic の中の誤ブロックの例外 |
-| `custom/annoyance.txt` | annoyance（プレミアム） | プラス | 不快な広告など、プレミアムで隠すもの。annoyance の中の例外 |
+| `custom/annoyance.txt` | annoyance（プレミアム） | プラス | 迷惑な表示（SNS の共有・いいね・フォローのボタン、通知の案内、アプリへの誘導）のうち、Fanboy のリストにないもの。Fanboy のリストから外すための例外（`#@#`）と、annoyance の中の例外 |
 | `custom/scam.txt` | scam（プレミアム・第 2 段階） | プラス | 詐欺サイトのブロック。**例外ルール（`@@…`）は書けない**（CI が失敗する。理由は README の「例外ルールが効く範囲」） |
 
 #### 手順
@@ -80,7 +85,13 @@
    - ほかのリストからルールを写すときは、ライセンスを確かめてから。**280blocker、豆腐フィルタなど、ライセンス上使えないリストからは写しません**（[licensing.md](licensing.md)）。
    - サイトそのものを止めるとき（`custom/scam.txt` など）は、オプションを付けない `||example.jp^` で書きます。`$document` だとトップのページしか止まらず（ツールがトップの文書に限るため。README の「変換器」）、`$document,subdocument` は変換器の都合で iframe しか止まりません。
    - 誤ブロックを直すときは、なるべく狭い例外にします。`@@||example.jp^$document` は、そのサイトで同じカテゴリ（と、同じ拡張の前にあるカテゴリ）のルールをすべて止めるので、最後の手段です。
-   - 原因が EasyList のルールなら、EasyList にも報告すると、ほかの利用者のためにもなります（[EasyList の issue](https://github.com/easylist/easylist/issues)）。
+   - 原因が EasyList のルールなら、EasyList にも報告すると、ほかの利用者のためにもなります（[EasyList の issue](https://github.com/easylist/easylist/issues)）。Fanboy の 2 つのリストも、元のファイルは EasyList のリポジトリ（`fanboy-addon/`）にあります。
+   - 原因が Fanboy のリスト（annoyance）のルールなら、`custom/annoyance.txt` に要素の例外（`example.com#@#.selector`。元のルールと同じドメインと同じセレクタ）を書きます。プレミアムで約束していないもの（同意のダイアログ・ログイン・有料記事の案内・コメント欄・年齢確認・アフィリエイトの表示）を隠すルールも、同じように外します。根拠の行には、確かめたページの URL（リストを読んで外すときは、リストの URL）と (日付) だけを書き、説明は次の行の `! 理由:` に書きます。例外の 1 行ごとに、根拠の行が要ります。
+     ```
+     ! 根拠: https://example.com/article/123 (2026-10-05)
+     ! 理由: Fanboy's Social Blocking List の「example.com##.comments」で、コメント欄が隠れていた
+     example.com#@#.comments
+     ```
 4. **手元で確かめる**（任意）：
    ```bash
    scripts/build-local.sh
@@ -105,7 +116,8 @@
 - [AH] Ahrefs Top（自然検索の流入の推計、2026 年 8 月）https://ahrefstop.com/websites/japan
 - [JJ] 時事ドットコム（2025-07-05）：性的な広告が、ゲームの攻略サイトやレシピサイトに出ていたという記事 https://www.jiji.com/jc/v8?id=202507seitekiad-team
 - 「広告あり」は、2026-09-29 に取った HTML に広告配信の読み込み（doubleclick・prebid・taboola など）があったことによる。どんな広告が出るかは確かめていない
-- 2025 年 4 月以降、業界の自主規制で、不快な広告の出方が変わっている（ITmedia NEWS 2025-06-05）。プレミアムの確認用のサイトは、実際に不快な広告が出ているかを見て入れ替える
+- プレミアム（annoyance。Fanboy の 2 つのリスト）の確認用のサイトは、SNS の共有ボタンや「通知を受け取りますか」の案内が出るページを選ぶ。日本の主なサイトでは、見た目が変わらないことも多い（2026-10-01 の確認では、主要 10 サイトのうち見た目が変わったのは Game8 の共有ボタンだけ。本文が隠れたページは 14 ページで 0）
+- プレミアムで、同意のダイアログ・ログイン・有料記事の案内・コメント欄・年齢確認が消えていないかも見る（消えていたら、[4.](#4-自作ルールを足す) の手順で例外を書く）
 
 | 区分 | サイト | 確かめること | 根拠 | 最後に確かめた日 | 結果 |
 |---|---|---|---|---|---|
@@ -116,7 +128,7 @@
 | 地図 | [Google マップ](https://www.google.com/maps) | 地図の表示・移動・拡大、場所の検索、電車の経路検索ができる | SW 地図 1 位 | | |
 | 乗換案内 | [駅探](https://ekitan.com/) | 出発駅と到着駅を入れて乗換の結果が出る。時刻表のページが開く | SW 地図 3 位、AH 97 位 | | |
 | 広告の多い情報サイト | [デリッシュキッチン](https://delishkitchen.tv/) | レシピを検索 → レシピのページ → 動画の再生。材料と手順が隠れない | SW レシピ 1 位、AH 8 位 | | |
-| 広告の多い情報サイト | [クラシル](https://www.kurashiru.com/) | 同上。記事中の広告枠が消えて、本文が読める（不快な広告の確認も兼ねる） | SW レシピ 2 位、AH 28 位、[JJ] | | |
+| 広告の多い情報サイト | [クラシル](https://www.kurashiru.com/) | 同上。記事中の広告枠が消えて、本文が読める | SW レシピ 2 位、AH 28 位、[JJ] | | |
 | 広告の多い情報サイト | [クックパッド](https://cookpad.com/jp) | 検索 → レシピ → つくれぽが表示される。ボット対策の画面で止まらない | SW レシピ 3 位、AH 19 位 | | |
 | 通販 | [Amazon.co.jp](https://www.amazon.co.jp/) | 検索 → 商品ページ → カートに入れる → カートの画面まで（レジに進まない） | SW 総合 7 位、SR 6 位 | | |
 | 通販 | [楽天市場](https://www.rakuten.co.jp/) | 検索 → 商品ページ → 買い物かごに入れる → かごの画面まで（購入手続きに進まない） | SW 総合 8 位、SR 7 位 | | |
@@ -134,8 +146,9 @@
 | 公的機関 | [日本郵便](https://www.post.japanpost.jp/)（[郵便追跡](https://trackings.post.japanpost.jp/services/srv/search/)） | トップと追跡番号の入力画面が表示される | SW 行政 1 位、AH 40 位 | | |
 | 公的機関 | [国税庁](https://www.nta.go.jp/) | トップ・サイト内検索・PDF が開く | SW 行政 4 位、AH 75 位 | | |
 | 自治体 | 【要記入：人口の多い自治体（例：横浜市・大阪市）】 | トップ・お知らせ・検索が開く | アクセスの多い自治体の公開の順位は見つからなかった。**このリポジトリは公開なので、住んでいる市区町村は書かない** | | |
-| 不快な広告（プレミアム） | [GameWith](https://gamewith.jp/) | 攻略記事のページで、目次・表・コメント欄が崩れない。記事中と下の広告が消える | SW 総合 38 位、AH 23 位、[JJ]（攻略サイト） | | |
-| 不快な広告（プレミアム） | [Game8](https://game8.jp/) | 同上 | AH 50 位、[JJ] | | |
+| 攻略サイト | [GameWith](https://gamewith.jp/) | 攻略記事のページで、目次・表・コメント欄が崩れない。記事中と下の広告が消える | SW 総合 38 位、AH 23 位、[JJ]（攻略サイト） | | |
+| 攻略サイト・プレミアム | [Game8](https://game8.jp/) | 同上。プレミアムでは、記事の共有ボタンが消え、本文と目次は隠れない | AH 50 位、[JJ]。2026-10-01 に、Fanboy のルール（`.c-share` など）で共有ボタンが隠れることを WebKit で確認 | | |
+| プレミアム | [毎日新聞](https://mainichi.jp/) | 記事のページ（`/articles/…`）で、共有ボタンと、フッターの SNS へのリンクが消える。本文は隠れない | 2026-10-01 に、Fanboy のルールで共有ボタン 3 つと `.footer-sns` だけが隠れることを WebKit で確認 | | |
 
 入れ替えの候補（どれも 2026-09-29 に開けることを確かめた）：Yahoo!天気・災害（SW 天気 1 位）、Yahoo!ショッピング（SW 総合 42 位）、メルカリ（SW 総合 41 位）、ABEMA（AH 70 位）、TVer（AH 90 位）、厚生労働省（SW 行政 2 位）、気象庁（AH 45 位）。NAVITIME（SW 旅行 1 位）は自動のアクセスを断るため確かめていないが、ブラウザでは開けるはず。
 
@@ -155,7 +168,7 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 
 1. まとめの表で、どのカテゴリが、何件から何件になったかを見る。
 2. 原因を確かめる。
-   - 上流の変化：`report.json`（実行の artifact「rules-out」）の各ソースの行数を、前の実行と比べる。上流のリストを直接開いて、壊れていないかを見る。
+   - 上流の変化：`report.json`（実行の artifact「rules-out」）の各ソースの行数を、前の実行と比べる。上流のリスト（EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List）を直接開いて、壊れていないかを見る。
    - こちらの変更：直前にマージした PR（リストを足した・外した、変換器を上げた、など）。
 3. **意図した変化・問題のない変化なら**：
    - main の公開：「Actions」→「ルールの公開」→「Run workflow」→ ブランチ `main`、「件数の大きな変化を許す」（`allow_count_change`）にチェック →「Run workflow」。
@@ -163,6 +176,14 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 4. **上流の事故なら**：何もしません。本番には前の版が残っています。上流が直ったあとの定期実行（または手動の実行）で、元に戻ります。長く直らないときは、`sources.yml` でそのソースを `enabled: false` にすることも考えます（その場合も件数が大きく変わるので、上の 3. で許可する）。
 
 本番の manifest を取得できないとき（ネットワークの失敗、5xx）も、比べられないので失敗にします。しばらくしてから流し直してください。
+
+### Fanboy のリストを初めて公開するとき（annoyance の件数が大きく増える）
+
+- 2026-10-01 に、annoyance に Fanboy's Social Blocking List と Fanboy's Notifications List を足しました（`sources.yml`）。
+- 本番に、annoyance が 1 件（`/check` 用のルールだけ）の版がすでにあると、次の公開で annoyance が 1 件から約 4,243 件になります（2026-10-01 の手元のビルド）。件数の変化の検査（30% 超かつ 100 件超）を超えるので、PR の検査も公開も止まります。
+- これは意図した変化です。[上の 3.](#対応) のとおり、PR にはラベル `allow-count-change` を付け、マージしたあとは「Run workflow」で `allow_count_change` にチェックを付けて実行します。
+- 本番に manifest がまだない、最初の公開（[初回の公開](#初回の公開)）では、件数を比べないので、この手順は要りません。
+- 公開したあと、`/check` で「プラス」が「有効」になること、見本のページ（`site/demo/social.html`。本番では `/demo/social`）で、見本の共有ボタンと通知の案内が消えることを確かめます（プレミアムの状態で）。
 
 ---
 

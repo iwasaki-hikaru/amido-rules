@@ -24,7 +24,7 @@ sources.yml（上流のリスト）＋ custom/（自作ルール）
 | カテゴリ | 区分 | 入る拡張 | 入力 |
 |---|---|---|---|
 | `basic` | 無料 | 基本（BlockerBasic） | EasyList ＋ `custom/basic.txt` |
-| `annoyance` | プレミアム | プラス（BlockerPlus）の 1 番目 | `custom/annoyance.txt` |
+| `annoyance` | プレミアム | プラス（BlockerPlus）の 1 番目 | Fanboy's Social Blocking List ＋ Fanboy's Notifications List ＋ `custom/annoyance.txt`（Fanboy のリストから外す例外など） |
 | `scam` | プレミアム（第 2 段階） | プラス（BlockerPlus）の 2 番目 | `custom/scam.txt`（今は空） |
 
 - ルールが 1 件もないカテゴリは、manifest に載せません。
@@ -162,7 +162,7 @@ swift run -c release rulestool build --help
 
 ## ライセンス
 
-- ルール（`custom/` と、配信する変換後のリスト）：CC BY-SA 3.0。[LICENSE-rules](LICENSE-rules) と [NOTICE](NOTICE) を参照してください。EasyList を変換して使っています。
+- ルール（`custom/` と、配信する変換後のリスト）：CC BY-SA 3.0。[LICENSE-rules](LICENSE-rules) と [NOTICE](NOTICE) を参照してください。EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance。著作者は The EasyList authors）を変換して使っています。このリポジトリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。
 - ツール（`Sources/`・`Tests/`・`scripts/`・`.github/`・`site/` など）：**ライセンスは未定です。** 決まるまで LICENSE は置いていません。
 - 判断材料は [docs/licensing.md](docs/licensing.md) にまとめています。
 

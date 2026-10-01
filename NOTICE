@@ -22,6 +22,26 @@ EasyList
           公開のたびの report.json（GitHub Actions の実行と GitHub Release に添付）に記録しています。
 
 
+Fanboy's Social Blocking List / Fanboy's Notifications List
+-----------------------------------------------------------
+著作者    The EasyList authors (https://easylist.to/)
+題名      Fanboy's Social Blocking List、Fanboy's Notifications List
+元の場所  https://secure.fanboy.co.nz/fanboy-social.txt
+          https://secure.fanboy.co.nz/fanboy-notifications.txt
+ライセンス  配布物の先頭は CC BY 3.0（http://creativecommons.org/licenses/by/3.0/）。
+            元のファイルがある EasyList のリポジトリでは、GNU GPL 第 3 版以降と
+            CC BY-SA 3.0 以降のデュアルライセンス（https://easylist.to/pages/licence.html）。
+            ここでは、どちらの条件も満たすように CC BY-SA 3.0
+            （https://creativecommons.org/licenses/by-sa/3.0/）で配っています。
+変更      - AdGuard SafariConverterLib v4.3.0（コミット 7a2e93f0afa70479cc59985f332025236c3f0c39）で、
+            Safari のコンテンツブロッカーの形式（JSON）に変換しました。
+          - 変換の前に、先頭の「[Adblock Plus 2.0]」の行を取り除いています。
+          - 変換できなかったルールと、Safari で使えないルールは含まれません。
+          - 一部のルールを、例外のルールで除いています（custom/annoyance.txt）。
+          - 自作のルールと組み合わせています（annoyance のカテゴリ）。
+          このアプリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。
+
+
 自作のルール
 ------------
 著作者    safari-blocker rules contributors
@@ -69,6 +89,31 @@ EasyList
             - Rules that could not be converted, and rules that Safari cannot
               use, are not included.
             - Combined with the custom rules (basic category).
+
+Fanboy's Social Blocking List / Fanboy's Notifications List
+  Authors:  The EasyList authors (https://easylist.to/)
+  Titles:   Fanboy's Social Blocking List, Fanboy's Notifications List
+  Source:   https://secure.fanboy.co.nz/fanboy-social.txt
+            https://secure.fanboy.co.nz/fanboy-notifications.txt
+  License:  The header of the distributed files states CC BY 3.0
+            (http://creativecommons.org/licenses/by/3.0/).
+            In the EasyList repository, where the source files are kept,
+            they are dual licensed under the GNU GPL version 3 or later and
+            CC BY-SA 3.0 Unported or later
+            (https://easylist.to/pages/licence.html).
+            To meet the conditions of both, they are redistributed here under
+            CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/).
+  Changes:  - Converted to the Safari content blocker format (JSON) with
+              AdGuard SafariConverterLib v4.3.0
+              (commit 7a2e93f0afa70479cc59985f332025236c3f0c39).
+            - The "[Adblock Plus 2.0]" header line is removed before conversion.
+            - Rules that could not be converted, and rules that Safari cannot
+              use, are not included.
+            - Some rules are excluded with exception rules
+              (custom/annoyance.txt).
+            - Combined with the custom rules (annoyance category).
+  This app and the distribution site are not affiliated with Fanboy or
+  the EasyList authors.
 
 Custom rules
   Authors:  safari-blocker rules contributors

@@ -10,7 +10,7 @@ struct SourcesYAMLTests {
             from: TestEnvironment.rulesRoot.appending(path: "sources.yml"),
             denylist: TestEnvironment.repositoryDenylist
         )
-        #expect(entries.count == 5)
+        #expect(entries.count == 7)
         let easyList = try #require(entries.first)
         #expect(easyList.name == "EasyList")
         #expect(easyList.slug == "easylist")

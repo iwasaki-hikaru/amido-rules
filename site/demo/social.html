@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  運営者へ：App Store のスクリーンショット用の見本のページ（プレミアム）。
+  - 共有・いいね・フォローのボタン、通知の案内、アプリへの誘導の表示は、Fanboy's Social Blocking List と
+    Fanboy's Notifications List の「サイトを指定しない汎用のルール」に当たるクラス名と id にしている：
+    .sns-share・.social-share・.social-follow（Social）、#onesignal-slidedown-container・.open-app-banner（Notifications）。
+    プレミアム（annoyance）のルールで本当に隠れ、basic のルールでは隠れない（2026-10-01 に WebKit で確認）。
+  - 上流のリストからこれらのルールが消えると、隠れなくなる。撮る前に、変換後の annoyance の JSON で確かめる。
+  - 実在のロゴや商標は使わない。ボタンは文字だけ。画面は加工しない。
+-->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>見本のページ（SNS のボタンと通知の案内）｜あみど</title>
+<link rel="stylesheet" href="/assets/site.css">
+<link rel="stylesheet" href="/assets/demo.css">
+</head>
+<body>
+<header class="site-header">
+  <p class="site-name"><a href="/">あみど</a></p>
+</header>
+<main id="main" class="demo-article demo-snspage">
+  <p class="demo-banner">これは「あみど」の見本のページです。共有・いいね・フォローのボタン、通知の案内、アプリの案内は見本で、実在のサービスとは関係ありません。</p>
+  <h1>商店街の秋祭り、3 年ぶりに山車が巡行 夜は灯りの通りも</h1>
+  <p class="demo-meta">見本ニュース ・ 10月4日 9:41</p>
+  <div class="demo-sns sns-share">
+    <span class="demo-sns-btn">共有</span>
+    <span class="demo-sns-btn">いいね</span>
+    <span class="demo-sns-btn">リンクをコピー</span>
+  </div>
+  <div class="demo-photo festival" role="img" aria-label="祭りのイメージ"></div>
+  <p>駅前の商店街で、週末に秋祭りが開かれました。3 年ぶりに山車が通りを巡り、沿道には朝から多くの人が集まりました。</p>
+  <p>夕方からは、通りの両側に手作りの灯りが並びました。子どもたちが描いた絵の灯りもあり、写真を撮る人の列ができていました。</p>
+  <p>商店会によると、来年は通りを広げて、出店の数を増やす予定です。</p>
+  <div class="demo-sns social-share">
+    <span class="demo-sns-label">この記事を共有する</span>
+    <span class="demo-sns-btn">共有</span>
+    <span class="demo-sns-btn">リンクをコピー</span>
+  </div>
+  <div class="demo-follow social-follow">
+    <p>見本ニュースをフォローして、新しい記事を受け取る</p>
+    <span class="demo-sns-btn primary">フォロー</span>
+  </div>
+</main>
+<div id="onesignal-slidedown-container" class="demo-prompt">
+  <p class="demo-prompt-title">通知を受け取りますか？</p>
+  <p>新しい記事が出たときに、お知らせします。</p>
+  <div class="demo-prompt-actions">
+    <span class="demo-sns-btn">あとで</span>
+    <span class="demo-sns-btn primary">許可</span>
+  </div>
+</div>
+<div class="demo-appcta open-app-banner">
+  <span>アプリなら、もっと読みやすく</span>
+  <span class="demo-sns-btn primary">アプリで開く</span>
+</div>
+</body>
+</html>

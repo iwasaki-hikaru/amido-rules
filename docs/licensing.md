@@ -3,6 +3,7 @@
 ルールのライセンスと、使えるリスト・使えないリストについて、調べてわかった事実をまとめています。**決めるのは運営者です。** この文書は法的な助言ではありません。判断に迷うものは、専門家に確認してください。
 
 - 調べた日：2026-09-28。ライセンスのページ、README、GitHub の API のメタデータ、変換器のソースを読みました。EasyList 以外のリストの本体は取得していません。
+  - 2026-10-01：annoyance に入れた Fanboy の 2 つのリストの先頭の行と、EasyList のライセンスのページを確かめました（[2.](#2-easylist) の「Fanboy's Social Blocking List・Fanboy's Notifications List」）。
 - 確かさの印：
   - ［確認済］：一次資料（ライセンスのページ、規約、リポジトリの LICENSE など）を読んで確かめた
   - ［二次情報］：FilterLists.com の記録、検索結果の要約、README の要約など、一次資料を直接は確かめていない
@@ -17,12 +18,18 @@
 |---|---|---|---|
 | 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | 仮に決めたもの。3.0 か 4.0 かは未決定（[3.](#3-cc-by-sa-30-と-40)） |
 | 自作ルール（`custom/*.txt`） | CC BY-SA 3.0 | 各ファイルの先頭、`LICENSE-rules` | 同上 |
-| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（フェーズ 3） | 未実装 |
+| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList と Fanboy の節がある） | 実装済み（annoyance は同梱せず、配信元から取得） |
 | ツール（`Sources/`・`Tests/`・`scripts/`・`.github/` など） | 未定 | なし | 決まるまで LICENSE を置かない（[9.](#9-ツールのライセンス)） |
 | サイトのページ（`site/`） | 未定（権利は運営者） | `site/licenses.html` | 【要記入】 |
 | 変換器（SafariConverterLib） | GPLv3 | `site/licenses.html`、`NOTICE` | CI で実行するだけで、配布しない（[5.](#5-変換器safariconverterlib)） |
 
-使っている上流のリストは、EasyList だけです（`sources.yml`）。
+使っている上流のリストは、次の 3 つです（`sources.yml`）。
+
+| リスト | カテゴリ | 配るときのライセンス | 説明 |
+|---|---|---|---|
+| EasyList | basic（無料） | CC BY-SA 3.0 | [2.](#2-easylist) |
+| Fanboy's Social Blocking List | annoyance（プレミアム） | CC BY-SA 3.0 | 2026-10-01 に採用。[2.](#2-easylist) の「Fanboy's Social Blocking List・Fanboy's Notifications List」 |
+| Fanboy's Notifications List | annoyance（プレミアム） | CC BY-SA 3.0 | 同上 |
 
 ---
 
@@ -41,6 +48,29 @@
 
 このリポジトリでは、CC BY-SA の道を選んでいます（3.0 か 4.0 かは未決定）。
 
+### Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）
+
+2026-10-01 に、annoyance（プレミアム）の中身として採用しました（運営者の決定）。
+
+- 配布物：
+  - https://secure.fanboy.co.nz/fanboy-social.txt
+  - https://secure.fanboy.co.nz/fanboy-notifications.txt
+- ライセンスの表示が 2 つあります。
+  - 配布物の 8 行目は `! License: http://creativecommons.org/licenses/by/3.0/` です（CC BY 3.0）。［確認済：2026-10-01］
+  - easylist.to がリンクしている同じ Social（https://easylist.to/easylist/fanboy-social.txt ）は、先頭が EasyList のライセンス（`! Licence: https://easylist.to/pages/licence.html`）です。GNU GPL 第 3 版以降と CC BY-SA 3.0 以降のデュアルライセンスです。［確認済：2026-10-01］
+  - 2 つのリストの元のファイルは、EasyList のリポジトリ（github.com/easylist/easylist の `fanboy-addon/`）にあります。［確認済：2026-10-01］
+- 扱い：どちらの読み方でも条件を満たすように、次のようにします。
+  - 変換したものは、annoyance として CC BY-SA 3.0 で配る。
+  - 著作者は「The EasyList authors (https://easylist.to/)」と表示する。
+  - 「CC BY 3.0」とだけ書かない（`LICENSE-rules`・`NOTICE`・`site/licenses.html` では、2 つの表示を両方書いている）。
+  - CC BY 3.0 の作品を変えたもの（翻案）を CC BY-SA で配ってよいことは、Creative Commons の FAQ の「Adapter's license chart」（BY の行・BY-SA の列）で確かめた。［確認済：2026-10-01］ https://creativecommons.org/faq/
+- 推薦の禁止：CC BY 3.0 §4(b) は、作者がこちらを支持・推薦していると示すことを禁じています。そのため、名前を出す場所には「このアプリ（と配信サイト）は、Fanboy や EasyList の作者とは関係がありません」を添えます（`NOTICE`・`site/licenses.html`・`site/support.html`・アプリの `LicensesView`）。`LICENSE-rules`・`README.md`・publish.yml の Release の説明では「このリポジトリと配信サイトは」と書いています。
+- 除いたルール：同意のダイアログ・ログイン・有料記事の案内・コメント欄・アフィリエイトの表示を隠すルールのうち、2026-10-01 に見つけた 7 つを、`custom/annoyance.txt` の例外（`#@#`）で除いています（7 行。それぞれに根拠と理由の行がある）。年齢確認を隠すルールは 0 件でした。
+  - annoyance のカテゴリは、Fanboy の 2 つと `custom/annoyance.txt` を 1 つにつないで 1 回で変換するので（`Sources/RulesKit/BuildPipeline.swift` の `convertCategories`）、例外はこのカテゴリの中で効きます。
+- まだ解決していないこと：
+  - App Store（FairPlay、標準の EULA）で配ることと、技術的な手段・追加の条件の禁止との関係は、EasyList と同じ論点です（[3.](#確かめていないこと)）。BY-SA で読めば、EasyList と同じ BY-SA 3.0 §4(b) がかかります。【要確認】（専門家に確認）
+  - Fanboy の日本のサイト向けのルール（`.jp`）の出どころ（[6.](#6-使わないと決めたもの使えないもの) の Yuki's uBlock Japanese filters との関係）は［未確認］です。basic の EasyList にも同じ懸念があります。
+
 ---
 
 ## 3. CC BY-SA 3.0 と 4.0
@@ -54,9 +84,9 @@
 | 3 | 営利目的の利用も許される | ― |
 | 4(a) | 配るすべての複製に、ライセンスの本文か URI を付ける。受け取った人の権利を狭める条件を足したり、技術的な手段で制限したりしない | `LICENSE-rules`・`NOTICE`・`site/licenses.html` に URI を書いている。Release には `NOTICE` と `LICENSE-rules` を添付し、説明にも URI を書く |
 | 4(b) | 翻案（Adaptation）は、BY-SA 3.0、同じ要素を持つ後の版、または互換の CC ライセンスで配る。ライセンスの URI を付け、受け取った人の権利を狭める条件を足したり、技術的な手段で制限したりしない | 変換後のリストを CC BY-SA 3.0 で配っている |
-| 4(c) | 著作者名、題名、URI を表示し、翻案では元の作品をどう使ったか（例：「EasyList を変換したもの」）を示す | `NOTICE`・`site/licenses.html` に、著作者・元の URL・変換と除外と組み合わせの説明を書いている |
+| 4(c) | 著作者名、題名、URI を表示し、翻案では元の作品をどう使ったか（例：「EasyList を変換したもの」）を示す | `NOTICE`・`site/licenses.html` に、著作者・元の URL・変換と除外と組み合わせの説明を書いている。`LICENSE-rules` と Release の説明にも、元のリスト（EasyList と Fanboy の 2 つ）と著作者を書いている |
 
-- 変換後の JSON は、EasyList の翻案（Adaptation）にあたります。
+- 変換後の JSON は、EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）の翻案（Adaptation）にあたります。
 - 3.0 について、Creative Commons は「BY-SA 3.0 と互換と指定された CC 以外のライセンスはない」としています。［確認済］ https://creativecommons.org/share-your-work/licensing-considerations/compatible-licenses/
 
 ### 確かめていないこと
@@ -85,10 +115,10 @@
 
 | 配る場所 | 配るもの | 必要なこと（CC BY-SA の場合） | 状態 |
 |---|---|---|---|
-| 公開リポジトリ（rules） | 自作ルール、ツール、（変換後の JSON は置かない） | ライセンスの URI、著作者、変更の説明 | `LICENSE-rules`・`NOTICE` あり |
+| 公開リポジトリ（rules） | 自作ルール、ツール、（変換後の JSON は置かない） | ライセンスの URI、著作者、変更の説明 | `LICENSE-rules`・`NOTICE` あり（どちらも EasyList と Fanboy の 2 つを挙げている） |
 | 配信サイト（`/v1/lists/*.json`） | 変換後のリスト | 同上 | `/licenses` に表記。JSON 自体には書けない（[3.](#確かめていないこと)） |
-| GitHub Release | 公開した一式（`dist/` の tar.gz） | 同上 | 説明に URI と著作者、`NOTICE`・`LICENSE-rules` を添付 |
-| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に同じ表記を出す | フェーズ 3 で実装する |
+| GitHub Release | 公開した一式（`dist/` の tar.gz） | 同上 | 説明に URI と著作者（EasyList と Fanboy の 2 つ。作者とは関係がないことも書く。publish.yml の「GitHub Release に保管する」）、`NOTICE`・`LICENSE-rules` を添付 |
+| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に同じ表記を出す | `LicensesView` に表記あり（EasyList・Fanboy・自作のルール） |
 
 ---
 
@@ -160,10 +190,12 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 
 ## 7. ほかの候補（広告・不快な要素・日本向け）
 
-採用するかどうかは未決定です。どれも、採用する前に、ライセンスと Safari での効果（変換できる割合、件数）を確かめます。
+Fanboy's Social Blocking List と Fanboy's Notifications List は、2026-10-01 に annoyance に採用しました（表の先頭の 2 行。[2.](#2-easylist) を参照）。ほかは、採用するかどうかは未決定です。どれも、採用する前に、ライセンスと Safari での効果（変換できる割合、件数）を確かめます。
 
 | リスト | URL | ライセンス | 確かさ | メモ |
 |---|---|---|---|---|
+| **Fanboy's Social Blocking List（採用）** | https://secure.fanboy.co.nz/fanboy-social.txt | 先頭の行に CC BY 3.0。元のファイルは EasyList のリポジトリにあり、EasyList のライセンス（GPLv3 以降と CC BY-SA 3.0 以降）。CC BY-SA 3.0 で配る | ［確認済：2026-10-01］ | annoyance。SNS の共有・いいね・フォローのボタンやウィジェット。約 75% はサイトを指定しない汎用のルール。サイトを指定したルールのうち `.jp` は 1.5%（52/3,474）。記事に埋め込まれた投稿（`.twitter-tweet` など）を隠すルールは 0 件 |
+| **Fanboy's Notifications List（採用）** | https://secure.fanboy.co.nz/fanboy-notifications.txt | 同上 | ［確認済：2026-10-01］ | annoyance。「通知を受け取りますか」などの案内、アプリへの誘導の表示。サイトを指定したルールのうち `.jp` は 5.6%（51/918） |
 | EasyPrivacy | https://easylist.to/easylist/easyprivacy.txt | EasyList のリポジトリのデュアルライセンス（リポジトリ全体にかかる） | ［二次情報］ | 追跡の防止。広告のリストとは別 |
 | Fanboy's Annoyance List | https://secure.fanboy.co.nz/fanboy-annoyance.txt | 先頭の行に CC BY 3.0。easylist.to のライセンスのページは「EasyList・EasyPrivacy・EasyList Germany・EasyList Italy 以外は別の条件のことがある」としているので、根拠にするのは先頭の行の CC BY 3.0 | ［確認済：2026-09-29］ | 中身の 52% が Cookie の同意の表示。年齢確認の画面を隠すルール（Fanboy Agegate）が 347 件ある。日本のサイト向けは 0.7%。「不快な広告」には当たらない |
 | Fanboy's Japanese | https://fanboy.co.nz/fanboy-japanese.txt | 先頭の行に CC BY 3.0 | ［確認済：2026-09-29］ | 2019-07 で更新が止まっている |
@@ -185,7 +217,7 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 出典：https://adguard.com/kb/general/ad-filtering/adguard-filters/ 、 https://easylist.to/ 、 https://easylist.to/pages/licence.html 、 https://github.com/uBlockOrigin/uAssets 、 https://github.com/Yuki2718/adblock2 、 https://api.filterlists.com/lists
 
 - GPLv3 のリストを使うと、そのカテゴリの JSON は GPLv3 で配ることになります（[AdGuard Japanese filter](#adguard-japanese-filter今は無効) と同じ注意）。
-- annoyance（プレミアム）のカテゴリに入れるなら、今の annoyance は自作ルールだけなので、ライセンスをそろえる相手は自作ルールだけです。
+- annoyance（プレミアム）のカテゴリに入れるなら、今の annoyance には Fanboy の 2 つのリスト（CC BY-SA 3.0 で配っている）と自作ルールが入っているので、それらとライセンスをそろえられるかを先に確かめます。GPLv3 のリストを足す場合、Fanboy の部分を GPLv3 で配れるかは、配布物の先頭の CC BY 3.0 で読むと［未確認］です。
 
 ---
 
@@ -238,6 +270,7 @@ FilterLists.com で「All Rights Reserved」と記録されているもの（作
 | アプリに同梱するリストの扱い | 3.0 の §4(b)（4.0 は §3(b)(3)）の、技術的な手段・追加の条件の禁止との関係を確かめる | [3.](#確かめていないこと) |
 | manifest にライセンスの表記を足すか | 足す（形式の変更）／ 足さない | [3.](#確かめていないこと) |
 | AdGuard Japanese filter を使うか | 使わない（今）／ GPLv3 で使う | [6.](#adguard-japanese-filter今は無効) |
-| annoyance に上流のリストを使うか | 自作ルールだけ（今）／ 表の候補から選ぶ | [7.](#7-ほかの候補広告不快な要素日本向け) |
+| annoyance に上流のリストを使うか | Fanboy's Social Blocking List と Fanboy's Notifications List を使う（2026-10-01 に決定）。ほかの候補を足すかは未決定 | [2.](#2-easylist)、[7.](#7-ほかの候補広告不快な要素日本向け) |
+| Fanboy のリストの 2 つのライセンス表示の扱い | CC BY-SA 3.0 で配り、著作者は「The EasyList authors」と表示する（今）。両方の条件を満たすと言えるかは専門家に確認 | [2.](#2-easylist) |
 | 詐欺サイトのデータ | 手で書く（案）／ 許可や契約を得て使う | [8.](#8-詐欺サイトのデータの候補scam第-2-段階) |
 | ツールのライセンス | 未定 | [9.](#9-ツールのライセンス) |

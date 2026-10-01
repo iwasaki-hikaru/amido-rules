@@ -15,6 +15,23 @@ sources:
     category: basic
     enabled: true
 
+  # 配布物の先頭は CC BY 3.0。元のファイル（github.com/easylist/easylist の fanboy-addon/）は
+  # GPLv3 以降と CC BY-SA 3.0 以降のデュアルライセンス（https://easylist.to/pages/licence.html）。
+  # どちらも満たすように、annoyance として CC BY-SA 3.0 で配る（docs/licensing.md）
+  - name: Fanboy's Social Blocking List
+    url: https://secure.fanboy.co.nz/fanboy-social.txt
+    license: CC-BY-SA-3.0
+    attribution: The EasyList authors (https://easylist.to/)
+    category: annoyance
+    enabled: true
+
+  - name: Fanboy's Notifications List
+    url: https://secure.fanboy.co.nz/fanboy-notifications.txt
+    license: CC-BY-SA-3.0
+    attribution: The EasyList authors (https://easylist.to/)
+    category: annoyance
+    enabled: true
+
   - name: 自作ルール（annoyance）
     path: custom/annoyance.txt
     license: CC-BY-SA-3.0
