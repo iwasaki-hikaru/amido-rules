@@ -8,7 +8,7 @@
 // - name は config/distribution.json の host の先頭（<name>.<サブドメイン>.workers.dev）と同じにする。
 //   host はアプリに埋め込むので、公開したあとは name もサブドメインも変えない。
 {
-  "name": "PLACEHOLDER-worker",
+  "name": "www",
   "compatibility_date": "2026-09-01",
   // workers.dev で公開する。版ごとのプレビュー URL は出さない（公開前の版が見えないように）
   "workers_dev": true,
