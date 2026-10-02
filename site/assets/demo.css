@@ -158,3 +158,58 @@
   font-size: 0.9rem;
   z-index: 10;
 }
+/* 広告ではないが、消したくなる部分の見本（demo/news.html。自分のルールの「タップで選ぶ」画面で選ぶ例）。
+   よくある「おすすめ記事」の枠をまねて、目立つ色と釣り見出しにしている */
+.demo-pickup {
+  background: #fff4f0;
+  border: 2px solid #e8590c;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 16px 0;
+}
+.demo-pickup-title {
+  font-weight: 800;
+  color: #c92a2a;
+  margin: 0 0 8px;
+}
+.demo-pickup-badge {
+  display: inline-block;
+  background: #e03131;
+  color: #fff;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+.demo-pickup ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.demo-pickup li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: #212529;
+}
+.demo-pickup li + li { margin-top: 8px; }
+.demo-pickup-thumb {
+  flex: none;
+  width: 56px;
+  height: 42px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #ffd43b, #f76707);
+}
+.demo-pickup-thumb.t2 { background: linear-gradient(135deg, #74c0fc, #845ef7); }
+.demo-pickup-thumb.t3 { background: linear-gradient(135deg, #ff8787, #fcc419); }
+.demo-pickup-more {
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e8590c;
+  margin: 6px 0 0;
+}
