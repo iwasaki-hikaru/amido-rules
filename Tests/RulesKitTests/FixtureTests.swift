@@ -52,7 +52,7 @@ struct FixtureTests {
     @Test("リストは検査を通り、テスト用のドメインだけを使う")
     func listsAreValidAndUseTestDomains() {
         for json in [SampleFixture.basicRulesJSON, SampleFixture.annoyanceRulesJSON] {
-            #expect(RuleListLint.lint(Data(json.utf8), forbidExceptions: false).isValid)
+            #expect(RuleListLint.lint(Data(json.utf8), forbidAllURLExceptions: false).isValid)
             let domains = json.components(separatedBy: "example.").count - 1
             #expect(domains >= 1)
             for word in ["google", "doubleclick", ".jp", ".net"] {

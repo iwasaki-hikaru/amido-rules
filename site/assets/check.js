@@ -3,6 +3,8 @@
 // 配信しているルールには、このサイトのホストで次の枠を隠すルールが 1 件ずつ入っている。
 //   basic      → .cb-check-basic
 //   annoyance  → .cb-check-annoyance
+//   privacy    → .cb-check-privacy
+// annoyance と privacy は同じ拡張（プラス）に入るが、アプリでは別々にオフにできるので、判定も分ける。
 // コンテンツブロッカーが効いていれば、Safari が枠に display: none を当てる。
 // ここでは、ページの読み込みが終わってから、枠が隠れているかどうかを見るだけで、外部との通信はしない。
 (function () {
@@ -10,7 +12,8 @@
 
   var checks = [
     { target: "cb-check-basic", result: "result-basic" },
-    { target: "cb-check-annoyance", result: "result-annoyance" }
+    { target: "cb-check-annoyance", result: "result-annoyance" },
+    { target: "cb-check-privacy", result: "result-privacy" }
   ];
 
   function isHidden(element) {

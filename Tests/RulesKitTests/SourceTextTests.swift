@@ -31,6 +31,66 @@ struct SourceTextTests {
         #expect(result.removedLines == 1)
     }
 
+    static let sectioned = """
+    ! Title: Example
+    ! *** easylist:example/general.txt ***
+    ||general.example^
+    ! *** easylist:example/specific_cname_a.txt ***
+    ! a のコメント（.jp を含んでも残さない）
+    ||a1.example.com^
+    ||a2.example.jp^
+
+    ||a3.example.co.jp^$third-party
+    ! *** easylist:example/specific_cname_b.txt ***
+    ||b1.example.net^
+    ! *** easylist:example/specific.txt ***
+    ||specific.example^
+    @@||allow.example.jp^
+    ! *** easylist:example/specific_cname_c.txt ***
+    ||c1.example.org^
+    """
+
+    @Test("節を除く：見出しの行から、次の見出しの行の前まで。.jp を含むルールの行は残す")
+    func excludesSections() {
+        let result = SourceText.excludeSections(
+            Self.sectioned, headingPrefix: "! *** easylist:example/specific_cname_", keepLinesContaining: ".jp"
+        )
+        #expect(result.text == """
+        ! Title: Example
+        ! *** easylist:example/general.txt ***
+        ||general.example^
+        ||a2.example.jp^
+        ||a3.example.co.jp^$third-party
+        ! *** easylist:example/specific.txt ***
+        ||specific.example^
+        @@||allow.example.jp^
+
+        """)
+        #expect(result.excludedSections == [
+            "! *** easylist:example/specific_cname_a.txt ***",
+            "! *** easylist:example/specific_cname_b.txt ***",
+            "! *** easylist:example/specific_cname_c.txt ***",
+        ])
+        #expect(result.removedRuleLines == 3)
+        #expect(result.keptRuleLines == 2)
+    }
+
+    @Test("節を除く：残す文字列がなければ、節の行はすべて除く")
+    func excludesSectionsWithoutKeep() {
+        let result = SourceText.excludeSections(Self.sectioned, headingPrefix: "! *** easylist:example/specific_cname_")
+        #expect(SourceText.countRuleLines(result.text) == 3)
+        #expect(result.removedRuleLines == 5)
+        #expect(result.keptRuleLines == 0)
+    }
+
+    @Test("節を除く：当たる見出しがなければ、何も変えない（改行はそろえる）")
+    func excludesNothingWhenNoHeading() {
+        let result = SourceText.excludeSections("rule1\r\n! *** easylist:x.txt ***\r\nrule2\r\n", headingPrefix: "! *** easylist:y")
+        #expect(result.text == "rule1\n! *** easylist:x.txt ***\nrule2\n")
+        #expect(result.excludedSections.isEmpty)
+        #expect(result.removedRuleLines == 0)
+    }
+
     @Test("中身がなければ空文字列")
     func emptyText() {
         #expect(SourceText.stripAdblockHeaders("[Adblock Plus 2.0]\n").text == "")

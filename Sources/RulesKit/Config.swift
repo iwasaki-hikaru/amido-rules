@@ -32,13 +32,18 @@ public struct ExtensionBudget: Codable, Sendable, Equatable {
 public struct BudgetsConfig: Codable, Sendable, Equatable {
     /// アプリが許可サイトとして登録できるドメインの上限。
     public var allowlistMaxDomains: Int
-    /// アプリが足すルールの件数（許可サイトの 1 件）。予算はこの分を空けて確かめる。
+    /// アプリが足すルールの件数（許可サイトの 1 件と、自分のルールの上限 userRulesMaxCount）。予算はこの分を空けて確かめる。
     public var appReservedRules: Int
-    /// アプリが足すルールのバイト数の上限（許可サイトが allowlistMaxDomains 件のとき）。予算はこの分を空けて確かめる。
+    /// アプリが足すルールのバイト数の上限（許可サイトが allowlistMaxDomains 件のときと、自分のルールの上限
+    /// userRulesMaxBytes の合計以上）。予算はこの分を空けて確かめる。
     public var appReservedBytes: Int
     public var countChange: CountChangeThreshold
     public var extensions: [String: ExtensionBudget]
     public var fileSizeLimitBytes: Int
+    /// アプリで利用者が足せる「自分のルール」の件数の上限（アプリの Budgets.userRulesMaxCount と同じ値）。
+    public var userRulesMaxCount: Int
+    /// 自分のルールの合計のバイト数の上限（配列につなぐときの `,` を含む。アプリの Budgets.userRulesMaxBytes と同じ値）。
+    public var userRulesMaxBytes: Int
 
     public init(
         allowlistMaxDomains: Int,
@@ -46,7 +51,9 @@ public struct BudgetsConfig: Codable, Sendable, Equatable {
         appReservedBytes: Int,
         countChange: CountChangeThreshold,
         extensions: [String: ExtensionBudget],
-        fileSizeLimitBytes: Int
+        fileSizeLimitBytes: Int,
+        userRulesMaxCount: Int,
+        userRulesMaxBytes: Int
     ) {
         self.allowlistMaxDomains = allowlistMaxDomains
         self.appReservedRules = appReservedRules
@@ -54,6 +61,8 @@ public struct BudgetsConfig: Codable, Sendable, Equatable {
         self.countChange = countChange
         self.extensions = extensions
         self.fileSizeLimitBytes = fileSizeLimitBytes
+        self.userRulesMaxCount = userRulesMaxCount
+        self.userRulesMaxBytes = userRulesMaxBytes
     }
 
     /// 拡張を、最初のカテゴリの順番で並べたもの（basic → plus）。
@@ -71,7 +80,7 @@ public struct BudgetsConfig: Codable, Sendable, Equatable {
         orderedExtensions.first { $0.budget.categories.contains(category) }?.name
     }
 
-    /// 拡張の中で最初のカテゴリか。2 番目以降のカテゴリには例外ルールを入れられない（docs/format.md）。
+    /// 拡張の中で最初のカテゴリか。2 番目以降のカテゴリには、すべての URL に効く例外ルールを入れられない（docs/format.md）。
     public func isFirstInExtension(_ category: RuleCategory) -> Bool {
         orderedExtensions.contains { $0.budget.categories.first == category }
     }
@@ -99,13 +108,18 @@ public struct BudgetsConfig: Codable, Sendable, Equatable {
         for category in RuleCategory.allCases where seen[category] == nil {
             problems.append("カテゴリ \(category.rawValue) がどの拡張にも入っていません")
         }
-        if appReservedRules < 0 {
-            problems.append("appReservedRules は 0 以上にしてください")
+        if userRulesMaxCount < 0 || userRulesMaxBytes < 0 {
+            problems.append("userRulesMaxCount と userRulesMaxBytes は 0 以上にしてください")
+        } else if appReservedRules < 1 + userRulesMaxCount {
+            problems.append("appReservedRules（\(appReservedRules)）が、許可サイトの 1 件と自分のルールの上限 \(userRulesMaxCount) 件の合計より小さくなっています")
         }
         if allowlistMaxDomains < 0 {
             problems.append("allowlistMaxDomains は 0 以上にしてください")
-        } else if appReservedBytes < RuleConstants.maxAllowlistRuleBytes(domainCount: allowlistMaxDomains) {
-            problems.append("appReservedBytes（\(appReservedBytes)）が、許可サイト \(allowlistMaxDomains) 件のルールの最大 \(RuleConstants.maxAllowlistRuleBytes(domainCount: allowlistMaxDomains)) バイトより小さくなっています")
+        } else if userRulesMaxBytes >= 0 {
+            let allowlistBytes = RuleConstants.maxAllowlistRuleBytes(domainCount: allowlistMaxDomains)
+            if appReservedBytes < allowlistBytes + userRulesMaxBytes {
+                problems.append("appReservedBytes（\(appReservedBytes)）が、許可サイト \(allowlistMaxDomains) 件のルールの最大 \(allowlistBytes) バイトと、自分のルールの上限 \(userRulesMaxBytes) バイトの合計より小さくなっています")
+            }
         }
         if fileSizeLimitBytes <= 0 {
             problems.append("fileSizeLimitBytes は 1 以上にしてください")

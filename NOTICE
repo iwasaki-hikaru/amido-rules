@@ -42,6 +42,24 @@ Fanboy's Social Blocking List / Fanboy's Notifications List
           このアプリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。
 
 
+EasyPrivacy
+-----------
+著作者    The EasyList authors (https://easylist.to/)
+題名      EasyPrivacy
+元の場所  https://easylist.to/easylist/easyprivacy.txt
+ライセンス  GNU GPL 第 3 版以降と、CC BY-SA 3.0 Unported 以降のデュアルライセンス
+            （https://easylist.to/pages/licence.html）。
+            ここでは CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）を選んで使っています。
+変更      - CNAME の節（見出しが「! *** easylist:easyprivacy/easyprivacy_specific_cname_」で始まる節）を
+            除いています。ただし、その節の中でも「.jp」を含む行は残しています（sources.yml）。
+          - AdGuard SafariConverterLib v4.3.0（コミット 7a2e93f0afa70479cc59985f332025236c3f0c39）で、
+            Safari のコンテンツブロッカーの形式（JSON）に変換しました。
+          - 変換の前に、先頭の「[Adblock Plus 1.1]」の行を取り除いています。
+          - 変換できなかったルールと、Safari で使えないルールは含まれません。
+          - プレミアムのトラッキング防止（privacy のカテゴリ）として配っています。
+          このアプリと配信サイトは、EasyPrivacy や EasyList の作者とは関係がありません。
+
+
 自作のルール
 ------------
 著作者    safari-blocker rules contributors
@@ -114,6 +132,30 @@ Fanboy's Social Blocking List / Fanboy's Notifications List
             - Combined with the custom rules (annoyance category).
   This app and the distribution site are not affiliated with Fanboy or
   the EasyList authors.
+
+EasyPrivacy
+  Authors:  The EasyList authors (https://easylist.to/)
+  Title:    EasyPrivacy
+  Source:   https://easylist.to/easylist/easyprivacy.txt
+  License:  Dual licensed under the GNU GPL version 3 or later and
+            CC BY-SA 3.0 Unported or later
+            (https://easylist.to/pages/licence.html).
+            Used here under CC BY-SA 3.0
+            (https://creativecommons.org/licenses/by-sa/3.0/).
+  Changes:  - The CNAME sections (sections whose heading starts with
+              "! *** easylist:easyprivacy/easyprivacy_specific_cname_") are
+              removed, except for the lines that contain ".jp"
+              (see sources.yml).
+            - Converted to the Safari content blocker format (JSON) with
+              AdGuard SafariConverterLib v4.3.0
+              (commit 7a2e93f0afa70479cc59985f332025236c3f0c39).
+            - The "[Adblock Plus 1.1]" header line is removed before conversion.
+            - Rules that could not be converted, and rules that Safari cannot
+              use, are not included.
+            - Distributed as the premium tracking protection
+              (privacy category).
+  This app and the distribution site are not affiliated with the authors
+  of EasyPrivacy or EasyList.
 
 Custom rules
   Authors:  safari-blocker rules contributors

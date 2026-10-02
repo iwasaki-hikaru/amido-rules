@@ -29,13 +29,19 @@
     元のファイルがある EasyList のリポジトリでは、GNU GPL 第 3 版以降と、CC BY-SA 3.0 以降の
     デュアルライセンス（https://easylist.to/pages/licence.html）。
     どちらの条件も満たすように、ここでは CC BY-SA 3.0 で配っています。
+- EasyPrivacy（privacy のカテゴリ）
+  - 著作者：The EasyList authors (https://easylist.to/)
+  - ライセンス：GNU GPL 第 3 版以降と、CC BY-SA 3.0 以降のデュアルライセンス
+    （https://easylist.to/pages/licence.html）。ここでは CC BY-SA 3.0 を選んでいます。
 - 変更：
   - AdGuard SafariConverterLib で Safari のコンテンツブロッカーの形式（JSON）に変換しています。
-  - 変換の前に、先頭の「[Adblock Plus 2.0]」の行を取り除いています。
+  - 変換の前に、先頭の「[Adblock Plus 2.0]」などの行を取り除いています。
   - 変換できなかったルールと、Safari で使えないルールは含まれません。
   - annoyance では、一部のルールを例外のルールで除いています（custom/annoyance.txt）。
+  - privacy では、EasyPrivacy の CNAME の節を除いています。ただし、その節の中でも「.jp」を含む行は
+    残しています（sources.yml）。
   - 自作のルールと組み合わせています。
-- このリポジトリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。
+- このリポジトリと配信サイトは、Fanboy や EasyList・EasyPrivacy の作者とは関係がありません。
 
 詳しい権利表記は NOTICE を参照してください。
 
@@ -78,17 +84,25 @@ The converted rule lists are adaptations of the following lists.
     under the GNU GPL version 3 or later and CC BY-SA 3.0 or later
     (https://easylist.to/pages/licence.html). To meet the conditions of
     both, they are redistributed here under CC BY-SA 3.0.
+- EasyPrivacy (privacy category)
+  - Authors: The EasyList authors (https://easylist.to/)
+  - License: dual licensed under the GNU GPL version 3 or later and
+    CC BY-SA 3.0 or later (https://easylist.to/pages/licence.html).
+    Used here under CC BY-SA 3.0.
 - Changes:
   - Converted to the Safari content blocker format (JSON) with
     AdGuard SafariConverterLib.
-  - The "[Adblock Plus 2.0]" header line is removed before conversion.
+  - The "[Adblock Plus 2.0]" and similar header lines are removed before
+    conversion.
   - Rules that could not be converted, and rules that Safari cannot use,
     are not included.
   - In the annoyance category, some rules are excluded with exception
     rules (custom/annoyance.txt).
+  - In the privacy category, the CNAME sections of EasyPrivacy are
+    removed, except for the lines that contain ".jp" (see sources.yml).
   - Combined with the custom rules.
 - This repository and the distribution site are not affiliated with
-  Fanboy or the EasyList authors.
+  Fanboy or the authors of EasyList or EasyPrivacy.
 
 See NOTICE for full attribution.
 

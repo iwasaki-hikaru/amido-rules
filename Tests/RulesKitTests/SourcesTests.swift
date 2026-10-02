@@ -10,7 +10,7 @@ struct SourcesYAMLTests {
             from: TestEnvironment.rulesRoot.appending(path: "sources.yml"),
             denylist: TestEnvironment.repositoryDenylist
         )
-        #expect(entries.count == 7)
+        #expect(entries.count == 8)
         let easyList = try #require(entries.first)
         #expect(easyList.name == "EasyList")
         #expect(easyList.slug == "easylist")
@@ -21,6 +21,18 @@ struct SourcesYAMLTests {
         #expect(easyList.attribution == "The EasyList authors (https://easylist.to/)")
         #expect(entries.filter(\.isCustom).map(\.category) == [.basic, .annoyance, .scam])
         #expect(entries.last?.enabled == false)
+        #expect(easyList.excludeSections == nil)
+
+        // EasyPrivacy：CNAME の節を除き、その節の中でも .jp を含む行は残す
+        let easyPrivacy = try #require(entries.first { $0.name == "EasyPrivacy" })
+        #expect(easyPrivacy.origin == .url(URL(string: "https://easylist.to/easylist/easyprivacy.txt")!))
+        #expect(easyPrivacy.category == .privacy)
+        #expect(easyPrivacy.enabled)
+        #expect(easyPrivacy.license == "CC-BY-SA-3.0")
+        #expect(easyPrivacy.attribution == "The EasyList authors (https://easylist.to/)")
+        #expect(easyPrivacy.slug == "easyprivacy")
+        #expect(easyPrivacy.excludeSections == "! *** easylist:easyprivacy/easyprivacy_specific_cname_")
+        #expect(easyPrivacy.keepLinesContaining == ".jp")
     }
 
     @Test("値の書き方：引用符、コメント、true / false、URL の #")
@@ -218,6 +230,26 @@ struct SourcesValidationTests {
     @Test("知らないキーはエラー（綴りの間違いを見つけるため）")
     func unknownKey() {
         #expect(problems(Self.validLines + ["licence: x"])?.contains("知らないキー「licence」") == true)
+    }
+
+    @Test("exclude_sections と keep_lines_containing を読む")
+    func excludeSections() throws {
+        let lines = Self.validLines + [#"exclude_sections: "! *** easylist:x/y_cname_""#, "keep_lines_containing: .jp"]
+        let entries = try SourcesFile.parse(Self.item(lines), denylist: TestEnvironment.repositoryDenylist)
+        #expect(entries.first?.excludeSections == "! *** easylist:x/y_cname_")
+        #expect(entries.first?.keepLinesContaining == ".jp")
+        let onlyExclude = try SourcesFile.parse(Self.item(Self.validLines + [#"exclude_sections: "! *** a""#]), denylist: TestEnvironment.repositoryDenylist)
+        #expect(onlyExclude.first?.keepLinesContaining == nil)
+    }
+
+    @Test("exclude_sections は見出しの行の始まり（! *** …）で書く", arguments: ["easylist:x/y_cname_", #""! ***""#, #""!*** a""#, #""! ** a""#])
+    func excludeSectionsMustBeHeading(value: String) {
+        #expect(problems(Self.validLines + ["exclude_sections: \(value)"])?.contains("見出しの行の始まり") == true)
+    }
+
+    @Test("keep_lines_containing だけではエラー")
+    func keepWithoutExclude() {
+        #expect(problems(Self.validLines + ["keep_lines_containing: .jp"])?.contains("「exclude_sections」と一緒に") == true)
     }
 
     @Test("enabled は true / false だけ")

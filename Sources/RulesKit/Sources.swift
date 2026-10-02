@@ -19,6 +19,10 @@ public struct SourceEntry: Sendable, Equatable {
     public var line: Int
     /// キャッシュのファイル名に使う名前（名前から作る。EasyList なら easylist）。
     public var slug: String
+    /// 除く節の見出しの行の始まり（`! *** ` で始まる。SourceText.excludeSections）。
+    public var excludeSections: String? = nil
+    /// 除く節の中でも、この文字列を含むルールの行は残す。
+    public var keepLinesContaining: String? = nil
 
     /// custom/ の下の自作ルール。各ルールに根拠のコメントが必要。
     public var isCustom: Bool {
@@ -37,7 +41,10 @@ public struct SourceEntry: Sendable, Equatable {
 }
 
 public enum SourcesFile {
-    public static let knownKeys: Set<String> = ["name", "url", "path", "license", "attribution", "category", "enabled"]
+    public static let knownKeys: Set<String> = [
+        "name", "url", "path", "license", "attribution", "category", "enabled",
+        "exclude_sections", "keep_lines_containing",
+    ]
 
     public static func load(from url: URL, denylist: Denylist) throws -> [SourceEntry] {
         let text = try FileIO.readText(url, displayName: url.lastPathComponent)
@@ -83,6 +90,18 @@ public enum SourcesFile {
             let categoryName = string("category")
             let urlText = string("url", required: false)
             let pathText = string("path", required: false)
+            let excludeSections = string("exclude_sections", required: false)
+            let keepLinesContaining = string("keep_lines_containing", required: false)
+
+            if let excludeSections, !excludeSections.hasPrefix(SourceText.sectionHeadingPrefix) {
+                problem(
+                    "「exclude_sections」は、節の見出しの行の始まり（\"\(SourceText.sectionHeadingPrefix)…\" の形）で書いてください：\(excludeSections)",
+                    line: item.fields["exclude_sections"]?.line
+                )
+            }
+            if keepLinesContaining != nil, item.fields["exclude_sections"] == nil {
+                problem("「keep_lines_containing」は「exclude_sections」と一緒に書いてください", line: item.fields["keep_lines_containing"]?.line)
+            }
 
             var category: RuleCategory?
             if let categoryName {
@@ -157,7 +176,9 @@ public enum SourcesFile {
                 category: category,
                 enabled: enabled,
                 line: item.line,
-                slug: entrySlug
+                slug: entrySlug,
+                excludeSections: excludeSections,
+                keepLinesContaining: keepLinesContaining
             ))
         }
 

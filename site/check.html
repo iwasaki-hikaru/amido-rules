@@ -1,8 +1,11 @@
 <!doctype html>
 <!--
   運営者へ：
-  - 配信しているルールには、ツールが自動で「<配信ホスト>##.cb-check-basic」と「<配信ホスト>##.cb-check-annoyance」を 1 件ずつ入れます。
-    枠のクラス名（cb-check-basic・cb-check-annoyance）を変えるときは、rules のツールも合わせて直してください。
+  - 配信しているルールには、ツールが自動で「<配信ホスト>##.cb-check-basic」「<配信ホスト>##.cb-check-annoyance」
+    「<配信ホスト>##.cb-check-privacy」を 1 件ずつ入れます（basic・annoyance・privacy のカテゴリに 1 件ずつ）。
+    枠のクラス名（cb-check-basic・cb-check-annoyance・cb-check-privacy）を変えるときは、rules のツールも合わせて直してください。
+  - プラスの拡張の中でも、迷惑な表示（annoyance）とトラッキング防止（privacy）は、アプリのホームで別々にオフにできます。
+    そのため、枠と判定もカテゴリごとに分けています。
   - 判定は assets/check.js で行います（CSP でインラインのスクリプトを禁止しているため、別のファイルにしている）。
 -->
 <html lang="ja">
@@ -47,10 +50,17 @@
   </section>
 
   <section class="check-item" aria-labelledby="annoyance-heading">
-    <h2 id="annoyance-heading">プラス（プレミアム）</h2>
+    <h2 id="annoyance-heading">迷惑な表示（プレミアム）</h2>
     <p class="check-status">結果：<strong id="result-annoyance" class="result" aria-live="polite">確認中…</strong></p>
-    <div id="cb-check-annoyance" class="cb-check-annoyance check-target">この枠が見えている場合、プラスのブロックは働いていません。</div>
-    <p class="muted"><strong>無料版では「無効」と表示されるのが正常です。</strong>プレミアムを購入していて、「あみど プラス」の拡張がオンになっていれば、「有効」と表示されます。</p>
+    <div id="cb-check-annoyance" class="cb-check-annoyance check-target">この枠が見えている場合、迷惑な表示のブロックは働いていません。</div>
+    <p class="muted"><strong>無料版では「無効」と表示されるのが正常です。</strong>プレミアムを購入していて、「あみど プラス」の拡張がオンで、アプリのホームで「迷惑な表示」がオンなら、「有効」と表示されます。</p>
+  </section>
+
+  <section class="check-item" aria-labelledby="privacy-heading">
+    <h2 id="privacy-heading">トラッキング防止（プレミアム）</h2>
+    <p class="check-status">結果：<strong id="result-privacy" class="result" aria-live="polite">確認中…</strong></p>
+    <div id="cb-check-privacy" class="cb-check-privacy check-target">この枠が見えている場合、トラッキング防止は働いていません。</div>
+    <p class="muted"><strong>無料版では「無効」と表示されるのが正常です。</strong>プレミアムを購入していて、「あみど プラス」の拡張がオンで、アプリのホームで「トラッキング防止」がオンなら、「有効」と表示されます。</p>
   </section>
 
   <p class="check-actions">
@@ -63,11 +73,13 @@
     <li><strong>設定で拡張をオンにしましたか。</strong>手順は<a href="/support#setup">設定のしかた</a>をご覧ください。Safari のプロファイルを使っている場合は、今のプロファイルでオンになっているかも確かめてください。</li>
     <li><strong>オンにしたあと、このページを再読み込みしましたか。</strong>設定を変えたあとは、ページを読み込み直すと反映されます。</li>
     <li><strong>このページで「コンテンツブロッカーをオフにする」を使っていませんか。</strong>Safari のページメニューからオフにしていると、「無効」になります。</li>
+    <li><strong>アプリのホーム画面で、そのスイッチがオンになっていますか。</strong>プレミアムの「迷惑な表示」と「トラッキング防止」は、ホームで別々にオフにできます。オフにしたものは「無効」と表示されます。</li>
     <li><strong>アプリのホーム画面に、エラーが出ていませんか。</strong>ルールの反映に失敗していると、表示されます。</li>
+    <li><strong>ホームの「トラッキング防止」のスイッチの下に「今は使えません」と出ていませんか。</strong>Safari がリストを読み込めなかったため、トラッキング防止を外して反映しています。このあいだ、トラッキング防止は「無効」と表示されます。次にアプリを起動したときや、ホームの「今すぐ更新」を押したときに、もう一度試します。</li>
   </ul>
 
   <h2 id="about">このページについて</h2>
-  <p>配信しているルールには、このページの 2 つの枠を隠すルールが 1 件ずつ入っています。枠が隠れていれば「有効」と表示します。</p>
+  <p>配信しているルールには、このページの 3 つの枠を隠すルールが 1 件ずつ入っています。枠が隠れていれば「有効」と表示します。</p>
   <p>判定は、お使いの端末の Safari の中だけで行います。このページは外部と通信せず、結果をどこにも送りません。</p>
 </main>
 

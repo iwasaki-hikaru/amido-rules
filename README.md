@@ -24,19 +24,21 @@ sources.yml（上流のリスト）＋ custom/（自作ルール）
 | カテゴリ | 区分 | 入る拡張 | 入力 |
 |---|---|---|---|
 | `basic` | 無料 | 基本（BlockerBasic） | EasyList ＋ `custom/basic.txt` |
-| `annoyance` | プレミアム | プラス（BlockerPlus）の 1 番目 | Fanboy's Social Blocking List ＋ Fanboy's Notifications List ＋ `custom/annoyance.txt`（Fanboy のリストから外す例外など） |
-| `scam` | プレミアム（第 2 段階） | プラス（BlockerPlus）の 2 番目 | `custom/scam.txt`（今は空） |
+| `annoyance` | プレミアム（迷惑な表示） | プラス（BlockerPlus）の 1 番目 | Fanboy's Social Blocking List ＋ Fanboy's Notifications List ＋ `custom/annoyance.txt`（Fanboy のリストから外す例外など） |
+| `privacy` | プレミアム（トラッキング防止） | プラス（BlockerPlus）の 2 番目 | EasyPrivacy（CNAME の節を除く。ただし、その節の中でも `.jp` を含む行は残す） |
+| `scam` | プレミアム（第 2 段階） | プラス（BlockerPlus）の 3 番目 | `custom/scam.txt`（今は空） |
 
 - ルールが 1 件もないカテゴリは、manifest に載せません。
-- basic と annoyance には、ツールが動作確認ページ（`/check`）用のルールを 1 件ずつ足します（`<配信ホスト>##.cb-check-basic` と `<配信ホスト>##.cb-check-annoyance`）。
+- basic・annoyance・privacy には、ツールが動作確認ページ（`/check`）用のルールを 1 件ずつ足します（`<配信ホスト>##.cb-check-basic`・`<配信ホスト>##.cb-check-annoyance`・`<配信ホスト>##.cb-check-privacy`）。annoyance と privacy は同じ拡張に入りますが、アプリのホームで別々にオフにできるので、`/check` でも別々に判定します。
+- EasyPrivacy の CNAME の節（特定のサイトのサブドメインを 1 件ずつ並べたもの。全体の約 6 割）は、件数を抑えるために除いています（`sources.yml` の `exclude_sections` と `keep_lines_containing`。書き方は [docs/format.md](docs/format.md#節を除くexclude_sectionskeep_lines_containing)）。
 
 ### 例外ルールが効く範囲
 
 Safari の `ignore-previous-rules`（`@@||example.jp^$document` などの例外ルールを変換したもの）は、**同じ拡張のリストの中で、それより前にあるすべてのルール**に効きます。別の拡張のルールには効きません。
 
-アプリは、拡張ごとにカテゴリの配列を決まった順番（プラスでは annoyance → scam）でつなぎ、末尾に許可サイトのルールを 1 件足します。そのため、scam に例外ルールがあると、前にある annoyance のルールまで打ち消してしまいます。
+アプリは、拡張ごとにカテゴリの配列を決まった順番（プラスでは annoyance → privacy → scam）でつなぎ、末尾に許可サイトのルールを 1 件足します。そのため、privacy や scam の例外ルールは、前にある annoyance のルールにも効きます。
 
-これを防ぐため、rulestool は「拡張の中で 2 番目以降のカテゴリ（今は scam）に `ignore-previous-rules` があれば失敗」にしています。これで「例外ルールは同じカテゴリの中だけで効く」が保たれます。basic と annoyance は拡張の 1 番目なので、例外ルールを書けます。
+rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy と scam）に、**すべての URL に効く**例外ルール（`url-filter` が `.*` など）があれば失敗」にしています。これがあると、前のカテゴリのルールをサイトごと打ち消してしまうためです。URL やホストを限った例外（EasyPrivacy の例外はすべてこの形）は通します。そのうち、ホストだけを限ったものの件数は `report.json` と `summary.md` に出します（[docs/format.md](docs/format.md)）。basic と annoyance は拡張の 1 番目なので、どんな例外ルールも書けます。
 
 許可サイトのルールは末尾にあるので、その拡張のすべてのカテゴリに効きます（意図どおり）。
 
@@ -162,7 +164,7 @@ swift run -c release rulestool build --help
 
 ## ライセンス
 
-- ルール（`custom/` と、配信する変換後のリスト）：CC BY-SA 3.0。[LICENSE-rules](LICENSE-rules) と [NOTICE](NOTICE) を参照してください。EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance。著作者は The EasyList authors）を変換して使っています。このリポジトリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。
+- ルール（`custom/` と、配信する変換後のリスト）：CC BY-SA 3.0。[LICENSE-rules](LICENSE-rules) と [NOTICE](NOTICE) を参照してください。EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）と、EasyPrivacy（privacy。CNAME の節は `.jp` を含む行を除いて外している）を変換して使っています。著作者は、どれも The EasyList authors です。このリポジトリと配信サイトは、Fanboy や EasyList・EasyPrivacy の作者とは関係がありません。
 - ツール（`Sources/`・`Tests/`・`scripts/`・`.github/`・`site/` など）：**ライセンスは未定です。** 決まるまで LICENSE は置いていません。
 - 判断材料は [docs/licensing.md](docs/licensing.md) にまとめています。
 

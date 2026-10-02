@@ -42,6 +42,71 @@ public enum SourceText {
         lines(text).reduce(0) { $0 + (isRuleLine($1) ? 1 : 0) }
     }
 
+    /// 節の見出しの行の始まり。EasyList の仲間のリストは、元のファイルごとに
+    /// 「! *** easylist:easyprivacy/easyprivacy_general.txt ***」のような行で区切られている。
+    public static let sectionHeadingPrefix = "! *** "
+
+    public struct SectionFilterResult: Sendable, Equatable {
+        public var text: String
+        /// 除いた節の見出し（前後の空白を除いたもの）。
+        public var excludedSections: [String]
+        /// 除いたルールの行の数。
+        public var removedRuleLines: Int
+        /// 除く節の中でも、`keepLinesContaining` を含むので残したルールの行の数。
+        public var keptRuleLines: Int
+    }
+
+    /// 見出しの行が `headingPrefix` で始まる節を除く（sources.yml の exclude_sections）。
+    ///
+    /// 節は、見出しの行から、次の見出しの行（`sectionHeadingPrefix` で始まる行）の前までとする。
+    /// `keepLinesContaining` があれば、除く節の中でも、その文字列を含むルールの行は残す
+    ///（sources.yml の keep_lines_containing。大文字と小文字は区別する）。
+    /// 除く節の中のコメントと空行は、残さない。
+    public static func excludeSections(
+        _ text: String,
+        headingPrefix: String,
+        keepLinesContaining: String? = nil
+    ) -> SectionFilterResult {
+        var kept: [Substring] = []
+        var sections: [String] = []
+        var removed = 0
+        var keptInSections = 0
+        var excluding = false
+        for line in lines(text) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix(sectionHeadingPrefix) {
+                excluding = trimmed.hasPrefix(headingPrefix)
+                if excluding {
+                    sections.append(trimmed)
+                    continue
+                }
+            }
+            guard excluding else {
+                kept.append(line)
+                continue
+            }
+            guard isRuleLine(line) else {
+                continue
+            }
+            if let keep = keepLinesContaining, !keep.isEmpty, line.contains(keep) {
+                kept.append(line)
+                keptInSections += 1
+            } else {
+                removed += 1
+            }
+        }
+        while let last = kept.last, last.isEmpty {
+            kept.removeLast()
+        }
+        let joined = kept.joined(separator: "\n")
+        return SectionFilterResult(
+            text: joined.isEmpty ? "" : joined + "\n",
+            excludedSections: sections,
+            removedRuleLines: removed,
+            keptRuleLines: keptInSections
+        )
+    }
+
     /// 先頭のコメントの中にある、ライセンス・ホームページ・版などの行（report.json に記録する）。
     /// EasyList は英国式の綴り「Licence」なので、両方を拾う。
     public static func headerLines(_ text: String) -> [String] {

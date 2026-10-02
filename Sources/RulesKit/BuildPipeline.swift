@@ -198,11 +198,15 @@ public final class BuildPipeline {
                 }
                 let stripped = SourceText.stripAdblockHeaders(text)
                 entry.removedHeaderLines = stripped.removedLines
-                entry.ruleLines = SourceText.countRuleLines(stripped.text)
+                var body = stripped.text
+                if let heading = source.excludeSections {
+                    body = excludeSections(body, heading: heading, of: source, into: &entry)
+                }
+                entry.ruleLines = SourceText.countRuleLines(body)
                 if case .url = source.origin {
                     entry.headerLines = SourceText.headerLines(text)
                 }
-                texts[source.category, default: []].append((source.name, stripped.text))
+                texts[source.category, default: []].append((source.name, body))
             } catch {
                 loadFailures.append("\(source.name)：\(error.localizedDescription)")
             }
@@ -213,6 +217,23 @@ public final class BuildPipeline {
             throw RulesError("ソースを読めません：\n" + loadFailures.map { "  - \($0)" }.joined(separator: "\n"))
         }
         return texts
+    }
+
+    /// sources.yml の exclude_sections の節を除く。当たる節が 1 つもなければエラーにする
+    ///（上流が節の名前を変えると、除くつもりの行が全部入ってしまうため。docs/runbook.md）。
+    func excludeSections(_ text: String, heading: String, of source: SourceEntry, into entry: inout BuildReport.Source) -> String {
+        let filtered = SourceText.excludeSections(text, headingPrefix: heading, keepLinesContaining: source.keepLinesContaining)
+        entry.excludeSections = heading
+        entry.keepLinesContaining = source.keepLinesContaining
+        entry.excludedSections = filtered.excludedSections
+        entry.excludedRuleLines = filtered.removedRuleLines
+        entry.keptRuleLines = source.keepLinesContaining == nil ? nil : filtered.keptRuleLines
+        if filtered.excludedSections.isEmpty {
+            report.errors.append("\(source.name)：sources.yml の exclude_sections（\(heading)）に当たる節が 1 つもありません。上流が節の名前を変えた可能性があります（docs/runbook.md）")
+        } else {
+            log("\(source.name)：節を \(filtered.excludedSections.count) 個除きました（ルールの行 \(Formatting.count(filtered.removedRuleLines)) 行を除き、\(Formatting.count(filtered.keptRuleLines)) 行を残す）")
+        }
+        return filtered.text
     }
 
     func loadData(of source: SourceEntry, into entry: inout BuildReport.Source) async throws -> Data {
@@ -300,8 +321,12 @@ public final class BuildPipeline {
             let scoped = try DocumentRuleScope.restrictToTopFrame(Data(result.safariRulesJSON.utf8))
             let data = scoped.data
             item.topFrameDocumentRules = scoped.changed
-            let lint = RuleListLint.lint(data, forbidExceptions: !config.budgets.isFirstInExtension(category))
+            let laterInExtension = !config.budgets.isFirstInExtension(category)
+            let lint = RuleListLint.lint(data, forbidAllURLExceptions: laterInExtension)
             item.lintIssueCount = lint.issueCount
+            item.laterInExtension = laterInExtension
+            item.exceptionRules = lint.exceptionCount
+            item.hostOnlyExceptionRules = lint.hostOnlyExceptionCount
             report.errors += lint.issues.map { "\(category.rawValue)：\($0)" }
             if lint.issueCount > lint.issues.count {
                 report.errors.append("\(category.rawValue)：ほかに \(Formatting.count(lint.issueCount - lint.issues.count)) 件の問題があります")

@@ -90,7 +90,7 @@ public struct Manifest: Codable, Sendable, Equatable {
                 problems.append("\(label)：同じカテゴリが 2 回あります")
             }
             if category.order < previousOrder {
-                problems.append("\(label)：lists が basic・annoyance・scam の順に並んでいません")
+                problems.append("\(label)：lists が \(RuleCategory.knownNames) の順に並んでいません")
             }
             previousOrder = category.order
             if !ManifestFormat.isValidSHA256(entry.sha256) {

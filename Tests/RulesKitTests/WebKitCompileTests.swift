@@ -20,7 +20,7 @@ struct WebKitCompileTests {
             [Data(SampleFixture.basicRulesJSON.utf8), Data(SampleLists.annoyance.utf8)],
             appending: [RuleConstants.sampleAllowlistRuleJSON]
         )
-        #expect(RuleListLint.lint(joined, forbidExceptions: false).isValid)
+        #expect(RuleListLint.lint(joined, forbidAllURLExceptions: false).isValid)
         _ = try await CompileChecker.compile(joined)
     }
 
@@ -29,7 +29,7 @@ struct WebKitCompileTests {
         let converted = #"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?html-load\\.com[/:]","resource-type":["document"]},"action":{"type":"block"}},{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"block"}}]"#
         let scoped = try DocumentRuleScope.restrictToTopFrame(Data(converted.utf8))
         #expect(scoped.changed == 2)
-        #expect(RuleListLint.lint(scoped.data, forbidExceptions: false).isValid)
+        #expect(RuleListLint.lint(scoped.data, forbidAllURLExceptions: false).isValid)
         _ = try await CompileChecker.compile(scoped.data)
     }
 

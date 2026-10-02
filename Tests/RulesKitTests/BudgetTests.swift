@@ -10,17 +10,19 @@ struct BudgetTests {
         appReservedBytes: 400,
         countChange: CountChangeThreshold(relativePercent: 30, absoluteRules: 100),
         extensions: [
-            "plus": ExtensionBudget(categories: [.annoyance, .scam], warnRules: 10, failRules: 20, warnBytes: 1000, failBytes: 2000),
+            "plus": ExtensionBudget(categories: [.annoyance, .privacy, .scam], warnRules: 10, failRules: 20, warnBytes: 1000, failBytes: 2000),
             "basic": ExtensionBudget(categories: [.basic], warnRules: 10, failRules: 20, warnBytes: 1000, failBytes: 2000),
         ],
-        fileSizeLimitBytes: 5000
+        fileSizeLimitBytes: 5000,
+        userRulesMaxCount: 0,
+        userRulesMaxBytes: 0
     )
 
     func evaluate(_ lists: [RuleCategory: ListMeasure]) -> BudgetEvaluation {
         BudgetCheck.evaluate(config: Self.config, lists: lists)
     }
 
-    @Test("件数にアプリの分（1 件）、バイト数に許可サイトの分（appReservedBytes）を足す")
+    @Test("件数にアプリの分（appReservedRules）、バイト数にアプリの分（appReservedBytes）を足す")
     func addsReserves() throws {
         let result = evaluate([.basic: ListMeasure(rules: 5, bytes: 100)])
         let basic = try #require(result.usages.first { $0.name == "basic" })
@@ -38,14 +40,15 @@ struct BudgetTests {
         #expect(plus.bytes == 400)
     }
 
-    @Test("plus は annoyance と scam の合計")
+    @Test("plus は annoyance・privacy・scam の合計")
     func sumsCategories() throws {
         let plus = try #require(evaluate([
             .annoyance: ListMeasure(rules: 3, bytes: 10),
+            .privacy: ListMeasure(rules: 2, bytes: 5),
             .scam: ListMeasure(rules: 4, bytes: 20),
         ]).usages.first { $0.name == "plus" })
-        #expect(plus.rules == 8)
-        #expect(plus.bytes == 430)
+        #expect(plus.rules == 10)
+        #expect(plus.bytes == 435)
     }
 
     @Test(
@@ -84,7 +87,7 @@ struct BudgetTests {
         #expect(throws: RulesError.self) { try overlapping.validate() }
 
         var missing = Self.config
-        missing.extensions["plus"]?.categories = [.annoyance]
+        missing.extensions["plus"]?.categories = [.annoyance, .scam]
         #expect(throws: RulesError.self) { try missing.validate() }
 
         var inverted = Self.config
@@ -96,6 +99,30 @@ struct BudgetTests {
         #expect(throws: RulesError.self) { try tooSmallReserve.validate() }
 
         #expect(throws: Never.self) { try Self.config.validate() }
+    }
+
+    @Test("設定の検査：アプリが足す分は、許可サイトと自分のルールの上限の合計以上")
+    func reserveIncludesUserRules() {
+        var config = Self.config
+        config.userRulesMaxCount = 200
+        config.userRulesMaxBytes = 1000
+        config.appReservedRules = 201
+        config.appReservedBytes = RuleConstants.maxAllowlistRuleBytes(domainCount: 1) + 1000
+        #expect(throws: Never.self) { try config.validate() }
+
+        // 件数：許可サイトの 1 件の分が足りない
+        var fewRules = config
+        fewRules.appReservedRules = 200
+        #expect(throws: RulesError.self) { try fewRules.validate() }
+
+        // バイト数：自分のルールの分が 1 バイト足りない
+        var fewBytes = config
+        fewBytes.appReservedBytes -= 1
+        #expect(throws: RulesError.self) { try fewBytes.validate() }
+
+        var negative = config
+        negative.userRulesMaxCount = -1
+        #expect(throws: RulesError.self) { try negative.validate() }
     }
 
     @Test("許可サイトのルールの最大バイト数は、実際に作った最大のルールと一致する")
@@ -112,16 +139,27 @@ struct BudgetTests {
         }
     }
 
-    @Test("リポジトリの config を読める。scam は plus の 2 番目")
+    @Test("リポジトリの config を読める。plus は annoyance → privacy → scam")
     func repositoryConfig() throws {
         let config = try RulesConfig.load(from: TestEnvironment.rulesRoot.appending(path: "config"))
-        #expect(config.budgets.appReservedRules == 1)
+        // 許可サイトの 1 件 ＋ 自分のルール 200 件（アプリの Budgets と同じ値。ios のテストでも比べている）
+        #expect(config.budgets.appReservedRules == 201)
+        #expect(config.budgets.userRulesMaxCount == 200)
+        #expect(config.budgets.userRulesMaxBytes == 128 * 1024)
         #expect(config.budgets.allowlistMaxDomains == 500)
-        #expect(config.budgets.appReservedBytes >= RuleConstants.maxAllowlistRuleBytes(domainCount: 500))
+        #expect(config.budgets.appReservedBytes == 256 * 1024)
+        #expect(config.budgets.appReservedBytes >= RuleConstants.maxAllowlistRuleBytes(domainCount: 500) + config.budgets.userRulesMaxBytes)
         #expect(config.budgets.fileSizeLimitBytes == 25 * 1024 * 1024)
         #expect(config.budgets.extensionName(containing: .scam) == "plus")
+        #expect(config.budgets.extensionName(containing: .privacy) == "plus")
+        #expect(config.budgets.extensions["plus"]?.categories == [.annoyance, .privacy, .scam])
+        // 拡張の中の順番は、manifest の並び（RuleCategory の宣言の順番）と同じ
+        for (_, budget) in config.budgets.orderedExtensions {
+            #expect(budget.categories == budget.categories.sorted())
+        }
         #expect(config.budgets.isFirstInExtension(.basic))
         #expect(config.budgets.isFirstInExtension(.annoyance))
+        #expect(!config.budgets.isFirstInExtension(.privacy))
         #expect(!config.budgets.isFirstInExtension(.scam))
         #expect(config.distribution.minAppBuild >= 1)
     }
@@ -175,6 +213,20 @@ struct CountChangeTests {
         )
         #expect(allowed.errors.isEmpty)
         #expect(allowed.warnings.count == 1)
+    }
+
+    @Test("privacy が初めて入る版：前の版になければ比べない（annoyance と basic は比べる）")
+    func privacyAddedForFirstTime() {
+        let result = CountChangeCheck.evaluate(
+            previous: ["basic": 59_000, "annoyance": 4_243],
+            current: [.basic: 59_100, .annoyance: 4_250, .privacy: 22_000],
+            threshold: threshold,
+            allow: false
+        )
+        #expect(result.errors.isEmpty)
+        #expect(result.entries.map(\.category) == ["basic", "annoyance", "privacy"])
+        #expect(result.entries.map(\.status) == [.ok, .ok, .added])
+        #expect(result.entries.last?.previous == nil)
     }
 
     @Test("新しいカテゴリは比べない")

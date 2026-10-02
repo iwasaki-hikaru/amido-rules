@@ -470,7 +470,7 @@ jobs:
             echo ""
             # ルールのリストを配るので、ライセンスと権利表記を添える（CC BY-SA 3.0 の 4(a)・4(c)。docs/licensing.md）
             echo "ルールのリスト（v1/lists/*.json）は CC BY-SA 3.0（https://creativecommons.org/licenses/by-sa/3.0/）です。"
-            echo "EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）を Safari のコンテンツブロッカーの形式に変換し、自作のルールと組み合わせたものです。著作者は、どれも The EasyList authors（https://easylist.to/）です。このリポジトリと配信サイトは、Fanboy や EasyList の作者とは関係がありません。詳しくは添付の NOTICE と LICENSE-rules を参照してください。"
+            echo "EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）と、EasyPrivacy（privacy。CNAME の節は .jp を含む行を除いて外している）を Safari のコンテンツブロッカーの形式に変換し、自作のルールと組み合わせたものです。著作者は、どれも The EasyList authors（https://easylist.to/）です。このリポジトリと配信サイトは、Fanboy や EasyList・EasyPrivacy の作者とは関係がありません。詳しくは添付の NOTICE と LICENSE-rules を参照してください。"
             echo ""
             cat build/out/summary.md
           } > build/release-notes.md

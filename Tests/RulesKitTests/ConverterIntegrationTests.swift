@@ -162,25 +162,30 @@ struct BuildPipelineTests {
         let manifest = try Manifest.decode(manifestData)
         #expect(manifest.version == "2026.10.05.2")
         #expect(manifest.minAppBuild == 3)
-        // scam は 0 件なので載せない。basic と annoyance には /check 用のルールが 1 件ずつ足される
-        #expect(manifest.lists.map(\.category) == ["basic", "annoyance"])
-        #expect(manifest.lists.map(\.ruleCount) == [2, 2])
+        // scam は 0 件なので載せない。basic・annoyance・privacy には /check 用のルールが 1 件ずつ足される
+        #expect(manifest.lists.map(\.category) == ["basic", "annoyance", "privacy"])
+        #expect(manifest.lists.map(\.ruleCount) == [2, 2, 1])
         #expect(manifest.problems().isEmpty)
         #expect(FileManager.default.fileExists(atPath: out.appending(path: "report.json").path(percentEncoded: false)))
         let summary = try String(contentsOf: out.appending(path: "summary.md"), encoding: .utf8)
         #expect(summary.contains("成功"))
-        #expect(report.compile?.entries.map(\.target) == ["extension:basic", "extension:plus", "category:basic", "category:annoyance"])
+        #expect(report.compile?.entries.map(\.target) == [
+            "extension:basic", "extension:plus", "category:basic", "category:annoyance", "category:privacy",
+        ])
         #expect(report.compile?.entries.allSatisfy(\.ok) == true)
 
         let basicList = try Data(contentsOf: out.appending(path: "v1").appending(path: manifest.lists[0].url))
         #expect(BuildPipeline.containsCheckRule(basicList, host: Self.host, className: "cb-check-basic"))
+        let privacyList = try Data(contentsOf: out.appending(path: "v1").appending(path: manifest.lists[2].url))
+        #expect(BuildPipeline.containsCheckRule(privacyList, host: Self.host, className: "cb-check-privacy"))
+        #expect(report.categories.first { $0.category == "privacy" }?.checkRule == "\(Self.host)##.cb-check-privacy")
 
         let key = Curve25519.Signing.PrivateKey()
         let trusted = trustedKeys(key)
         let signed = try Signing.sign(manifest: manifestData, privateKey: key, trusted: trusted)
         try Data(signed.signatureFile.utf8).write(to: out.appending(path: "v1/manifest.json.sig"))
         let verified = try await DistributionVerifier.verify(manifestAt: DistributionVerifier.manifestLocation(directory: out), trusted: trusted)
-        #expect(verified.lists.count == 2)
+        #expect(verified.lists.count == 3)
     }
 
     @Test("--compose-out：拡張ごとに合成した JSON（アプリが Safari に渡す形）を書く。配信するディレクトリには入れない")
@@ -211,17 +216,103 @@ struct BuildPipelineTests {
         #expect(!FileManager.default.fileExists(atPath: options.outDirectory.appending(path: "extension-basic.json").path(percentEncoded: false)))
     }
 
-    @Test("scam（plus の 2 番目）に例外ルールがあれば失敗し、manifest を書かない")
+    @Test("scam（plus の 3 番目）に、すべての URL に効く例外ルール（$document）があれば失敗し、manifest を書かない")
     func exceptionInScamFails() async throws {
         let root = try makeRepository(basic: "||ads.example.com^", scam: "@@||example.org^$document")
         defer { try? FileManager.default.removeItem(at: root) }
         let options = try options(root) { $0.skipCompileCheck = true }
         let report = await BuildPipeline.run(options)
         #expect(!report.ok)
-        #expect(report.errors.contains { $0.hasPrefix("scam：rules[0]:") && $0.contains("2 番目以降") })
+        #expect(report.errors.contains { $0.hasPrefix("scam：rules[0]:") && $0.contains("2 番目以降") && $0.contains("すべての URL") })
         #expect(!FileManager.default.fileExists(atPath: options.outDirectory.appending(path: "v1/manifest.json").path(percentEncoded: false)))
         #expect(FileManager.default.fileExists(atPath: options.outDirectory.appending(path: "report.json").path(percentEncoded: false)))
         #expect(report.compile?.skipped == true)
+    }
+
+    @Test("scam（plus の 3 番目）でも、URL やホストを限った例外ルールは通る。件数を report に出す")
+    func limitedExceptionInScamPasses() async throws {
+        let root = try makeRepository(
+            basic: "||ads.example.com^",
+            scam: "@@||tracker.example^\n! 根拠: https://example.com/evidence (2026-01-02)\n@@||cdn.example/track.js"
+        )
+        defer { try? FileManager.default.removeItem(at: root) }
+        let options = try options(root) { $0.skipCompileCheck = true }
+        let report = await BuildPipeline.run(options)
+        #expect(report.ok, "\(report.errors)")
+        let scam = try #require(report.categories.first { $0.category == "scam" })
+        #expect(scam.laterInExtension == true)
+        #expect(scam.exceptionRules == 2)
+        #expect(scam.hostOnlyExceptionRules == 1)
+        let annoyance = try #require(report.categories.first { $0.category == "annoyance" })
+        #expect(annoyance.laterInExtension == false)
+        let summary = try String(contentsOf: options.outDirectory.appending(path: "summary.md"), encoding: .utf8)
+        #expect(summary.contains("前のカテゴリにも効く例外ルール"))
+        #expect(summary.contains("| scam | plus | 2 | 1 |"))
+    }
+
+    @Test("exclude_sections：上流のリストの節を除き、.jp を含む行は残す。当たる節がなければ失敗")
+    func excludesSections() async throws {
+        func extra(_ heading: String) -> String {
+            """
+              - name: Upstream Privacy
+                url: https://lists.example.com/privacy.txt
+                license: CC0-1.0
+                attribution: tests
+                category: privacy
+                enabled: true
+                exclude_sections: "\(heading)"
+                keep_lines_containing: .jp
+
+            """
+        }
+        let upstream = """
+        [Adblock Plus 1.1]
+        ! Licence: https://example.com/licence
+        ! *** easylist:test/general.txt ***
+        ||tracker.example.com^
+        ! *** easylist:test/specific_cname_a.txt ***
+        ||cname1.example.com^
+        ||cname2.example.jp^
+        ! *** easylist:test/specific_cname_b.txt ***
+        ||cname3.example.net^
+        ! *** easylist:test/specific.txt ***
+        ||specific.example.org^
+
+        """
+        let root = try makeRepository(basic: "||ads.example.com^", extraSources: extra("! *** easylist:test/specific_cname_"))
+        defer { try? FileManager.default.removeItem(at: root) }
+        try write(upstream, to: root.appending(path: "build/sources/upstream-privacy.txt"))
+
+        let report = await BuildPipeline.run(try options(root) { $0.skipCompileCheck = true })
+        #expect(report.ok, "\(report.errors)")
+        let source = try #require(report.sources.first { $0.name == "Upstream Privacy" })
+        #expect(source.excludedSections == [
+            "! *** easylist:test/specific_cname_a.txt ***",
+            "! *** easylist:test/specific_cname_b.txt ***",
+        ])
+        #expect(source.excludedRuleLines == 2)
+        #expect(source.keptRuleLines == 1)
+        #expect(source.ruleLines == 3)
+        #expect(source.headerLines == ["! Licence: https://example.com/licence"])
+        // tracker・cname2（.jp）・specific の 3 件と、/check 用の 1 件
+        let privacy = try #require(report.categories.first { $0.category == "privacy" })
+        #expect(privacy.ruleCount == 4)
+        let work = try String(contentsOf: root.appending(path: "build/work/privacy.txt"), encoding: .utf8)
+        #expect(work.contains("cname2.example.jp") && !work.contains("cname1.example.com") && !work.contains("cname3"))
+
+        // 上流が節の名前を変えたとき（当たる節がない）は失敗にする
+        try write(extraSourcesFile(root, extra("! *** easylist:test/renamed_cname_")), to: root.appending(path: "sources.yml"))
+        let renamed = await BuildPipeline.run(try options(root) { $0.skipCompileCheck = true })
+        #expect(!renamed.ok)
+        #expect(renamed.errors.contains { $0.contains("Upstream Privacy") && $0.contains("当たる節が 1 つもありません") })
+    }
+
+    /// sources.yml の末尾の項目（extraSources）だけを差し替える。
+    func extraSourcesFile(_ root: URL, _ extra: String) throws -> String {
+        let text = try String(contentsOf: root.appending(path: "sources.yml"), encoding: .utf8)
+        let marker = "  - name: Upstream Privacy"
+        let head = text.components(separatedBy: marker).first ?? text
+        return head + extra
     }
 
     @Test("根拠のない自作ルールがあれば失敗する")

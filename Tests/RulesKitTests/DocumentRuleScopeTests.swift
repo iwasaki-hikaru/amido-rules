@@ -19,7 +19,7 @@ struct DocumentRuleScopeTests {
         #expect(trigger["load-context"] as? [String] == ["top-frame"])
         #expect(trigger["resource-type"] as? [String] == ["document"])
         #expect(trigger["url-filter"] as? String == #"^[^:]+://+([^:/]+\.)?html-load\.com[/:]"#)
-        #expect(RuleListLint.lint(result.data, forbidExceptions: false).isValid)
+        #expect(RuleListLint.lint(result.data, forbidAllURLExceptions: false).isValid)
     }
 
     @Test("ほかのルールは変えない", arguments: [

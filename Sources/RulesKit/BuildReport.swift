@@ -18,6 +18,14 @@ public struct BuildReport: Codable, Sendable, Equatable {
         public var removedHeaderLines: Int?
         /// 上流のリストの先頭にある「! Licence:」「! Homepage:」などの行。
         public var headerLines: [String] = []
+        /// sources.yml の exclude_sections と keep_lines_containing（書いたときだけ）。
+        public var excludeSections: String?
+        public var keepLinesContaining: String?
+        /// 除いた節の見出し。上流が節の名前を変えると、ここが変わる（docs/runbook.md）。
+        public var excludedSections: [String]?
+        /// 除いたルールの行の数と、除く節の中でも残したルールの行の数。
+        public var excludedRuleLines: Int?
+        public var keptRuleLines: Int?
     }
 
     public struct Converter: Codable, Sendable, Equatable {
@@ -46,6 +54,11 @@ public struct BuildReport: Codable, Sendable, Equatable {
         public var lintIssueCount: Int = 0
         /// トップの文書に限った（load-context: top-frame を足した）document の block ルールの数（DocumentRuleScope）。
         public var topFrameDocumentRules: Int?
+        /// 拡張の中で 2 番目以降のカテゴリか（例外ルールが前のカテゴリにも効く。docs/format.md）。
+        public var laterInExtension: Bool?
+        /// 例外ルール（ignore-previous-rules）の数と、そのうちホストだけを限ったもの（`@@||example.com^` の形）の数。
+        public var exceptionRules: Int?
+        public var hostOnlyExceptionRules: Int?
     }
 
     public struct CompileEntry: Codable, Sendable, Equatable {
@@ -132,7 +145,7 @@ public struct BuildReport: Codable, Sendable, Equatable {
                 lines.append("| \(usage.name) | \(usage.categories.map(\.rawValue).joined(separator: " → ")) | \(Formatting.count(usage.rules))（\(Formatting.count(usage.warnRules)) / \(Formatting.count(usage.failRules))） | \(Formatting.bytes(usage.bytes))（\(Formatting.bytes(usage.warnBytes)) / \(Formatting.bytes(usage.failBytes))） | \(status) |")
             }
             lines.append("")
-            lines.append("件数はアプリが足す分（許可サイトのルール）を、バイト数はその分の 256 バイトを含みます。")
+            lines.append("件数とバイト数は、アプリが足す分（許可サイトのルールと自分のルールの上限。config/budgets.json の appReservedRules と appReservedBytes）を含みます。")
             lines.append("")
         }
 
@@ -175,6 +188,20 @@ public struct BuildReport: Codable, Sendable, Equatable {
             lines.append("")
         }
 
+        let laterCategories = categories.filter { $0.laterInExtension == true && ($0.exceptionRules ?? 0) > 0 }
+        if !laterCategories.isEmpty {
+            lines.append("### 前のカテゴリにも効く例外ルール")
+            lines.append("")
+            lines.append("拡張の中で 2 番目以降のカテゴリの例外ルールは、同じ拡張の前のカテゴリにも効きます。すべての URL に効くものは失敗にしています。ホストだけを限ったものは、そのホストのほとんどの読み込みを許します（docs/format.md）。")
+            lines.append("")
+            lines.append("| カテゴリ | 拡張 | 例外ルール | うちホストだけを限ったもの |")
+            lines.append("|---|---|---:|---:|")
+            for category in laterCategories {
+                lines.append("| \(category.category) | \(category.extensionName ?? "-") | \(Formatting.count(category.exceptionRules ?? 0)) | \(Formatting.count(category.hostOnlyExceptionRules ?? 0)) |")
+            }
+            lines.append("")
+        }
+
         let enabledSources = sources.filter(\.enabled)
         if !enabledSources.isEmpty {
             lines.append("### ソース")
@@ -186,6 +213,17 @@ public struct BuildReport: Codable, Sendable, Equatable {
                 lines.append("| \(source.name) | \(source.category) | \(source.license) | \(source.ruleLines.map(Formatting.count) ?? "-") | \(how) |")
             }
             lines.append("")
+            for source in enabledSources {
+                guard let sections = source.excludedSections else { continue }
+                var text = "- \(source.name)：節を \(sections.count) 個除きました（ルールの行 \(Formatting.count(source.excludedRuleLines ?? 0)) 行）"
+                if let keep = source.keepLinesContaining {
+                    text += "。除いた節の中でも「\(keep)」を含む \(Formatting.count(source.keptRuleLines ?? 0)) 行は残しています"
+                }
+                lines.append(text)
+            }
+            if enabledSources.contains(where: { $0.excludedSections != nil }) {
+                lines.append("")
+            }
         }
 
         func list(_ title: String, _ items: [String]) {

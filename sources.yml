@@ -39,6 +39,19 @@ sources:
     category: annoyance
     enabled: true
 
+  # トラッキング防止（privacy）。EasyList のリポジトリのデュアルライセンス（GPLv3 以降と CC BY-SA 3.0 以降、
+  # https://easylist.to/pages/licence.html）。annoyance と同じく CC BY-SA 3.0 で配る（docs/licensing.md）。
+  # CNAME の節（特定のサイトのサブドメインを 1 件ずつ並べたもの。全体の約 6 割）は、件数を抑えるために除く。
+  # ただし、日本のサイトの計測を逃さないように、その節の中でも「.jp」を含む行は残す（docs/format.md の sources.yml）
+  - name: EasyPrivacy
+    url: https://easylist.to/easylist/easyprivacy.txt
+    license: CC-BY-SA-3.0
+    attribution: The EasyList authors (https://easylist.to/)
+    category: privacy
+    enabled: true
+    exclude_sections: "! *** easylist:easyprivacy/easyprivacy_specific_cname_"
+    keep_lines_containing: .jp
+
   - name: 自作ルール（scam）
     path: custom/scam.txt
     license: CC-BY-SA-3.0

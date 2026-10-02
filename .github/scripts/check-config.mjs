@@ -240,7 +240,7 @@ function checkHtml() {
     }
   }
   const check = readFileSync("site/check.html", "utf8");
-  for (const category of ["basic", "annoyance"]) {
+  for (const category of ["basic", "annoyance", "privacy"]) {
     const pattern = new RegExp(`id="cb-check-${category}"[^>]*class="[^"]*\\bcb-check-${category}\\b`);
     if (!pattern.test(check)) {
       error("site/check.html", `id と class が cb-check-${category} の枠が必要です（配信するルールがこの枠を隠す）`);

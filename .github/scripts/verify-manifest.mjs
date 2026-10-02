@@ -16,7 +16,8 @@ import { dirname, join } from "node:path";
 
 // Ed25519 の公開鍵（32 バイト）の前に付ける SPKI（DER）の固定の頭（RFC 8410）
 const SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
-const CATEGORIES = new Set(["basic", "annoyance", "scam"]);
+// docs/format.md のカテゴリ。lists はこの順に並ぶ（Sources/RulesKit/Basics.swift の RuleCategory と同じ）
+const CATEGORIES = ["basic", "annoyance", "privacy", "scam"];
 const FILE_SIZE_LIMIT = 25 * 1024 * 1024;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
@@ -94,9 +95,16 @@ function checkManifest(manifest) {
     return problems;
   }
   const seen = new Set();
+  let previousOrder = -1;
   for (const entry of manifest.lists) {
     const label = `lists[${entry.category}]`;
-    if (!CATEGORIES.has(entry.category)) problems.push(`${label}：知らないカテゴリです`);
+    const order = CATEGORIES.indexOf(entry.category);
+    if (order < 0) {
+      problems.push(`${label}：知らないカテゴリです`);
+    } else {
+      if (order < previousOrder) problems.push(`${label}：lists が ${CATEGORIES.join("・")} の順に並んでいません`);
+      previousOrder = order;
+    }
     if (seen.has(entry.category)) problems.push(`${label}：同じカテゴリが 2 回あります`);
     seen.add(entry.category);
     if (typeof entry.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(entry.sha256)) {

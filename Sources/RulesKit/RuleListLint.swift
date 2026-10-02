@@ -5,6 +5,10 @@ public struct LintReport: Sendable, Equatable {
     public var ruleCount: Int
     public var issues: [String]
     public var issueCount: Int
+    /// 例外ルール（ignore-previous-rules）の数。
+    public var exceptionCount: Int = 0
+    /// そのうち、ホストだけを限ったもの（RuleListLint.isHostOnlyURLFilter）の数。
+    public var hostOnlyExceptionCount: Int = 0
 
     public var isValid: Bool { issueCount == 0 }
 }
@@ -40,9 +44,12 @@ public enum RuleListLint {
     public static let allowedLoadTypes: Set<String> = ["first-party", "third-party"]
     public static let allowedLoadContexts: Set<String> = ["top-frame", "child-frame"]
 
-    /// - Parameter forbidExceptions: 拡張の中で 2 番目以降のカテゴリ（scam）なら true。
-    ///   `ignore-previous-rules` が前のカテゴリのルールまで打ち消してしまうため、1 件でもあれば失敗にする。
-    public static func lint(_ data: Data, forbidExceptions: Bool, maxIssues: Int = 200) -> LintReport {
+    /// - Parameter forbidAllURLExceptions: 拡張の中で 2 番目以降のカテゴリ（privacy・scam）なら true。
+    ///   `ignore-previous-rules` は前のカテゴリのルールにも効くので、すべての URL に効く例外
+    ///  （`url-filter` が `.*` など。matchesEveryURL）は、前のカテゴリをサイトごと止めてしまう。それを失敗にする。
+    ///   `.jp` のサイトすべてなど、サフィックス全体に効く例外（matchedWideSuffix）も同じく失敗にする。
+    ///   URL やホストを限った例外は通す（docs/format.md）。
+    public static func lint(_ data: Data, forbidAllURLExceptions: Bool, maxIssues: Int = 200) -> LintReport {
         let json: Any
         do {
             json = try JSONSerialization.jsonObject(with: data)
@@ -57,7 +64,17 @@ public enum RuleListLint {
         }
         var report = LintReport(ruleCount: rules.count, issues: [], issueCount: 0)
         for (index, rule) in rules.enumerated() {
-            for problem in problems(in: rule, forbidExceptions: forbidExceptions) {
+            if let rule = rule as? [String: Any],
+               let action = rule["action"] as? [String: Any],
+               action["type"] as? String == "ignore-previous-rules" {
+                report.exceptionCount += 1
+                if let trigger = rule["trigger"] as? [String: Any],
+                   let filter = trigger["url-filter"] as? String,
+                   isHostOnlyURLFilter(filter) {
+                    report.hostOnlyExceptionCount += 1
+                }
+            }
+            for problem in problems(in: rule, forbidAllURLExceptions: forbidAllURLExceptions) {
                 report.issueCount += 1
                 if report.issues.count < maxIssues {
                     report.issues.append("rules[\(index)]: \(problem)")
@@ -68,7 +85,7 @@ public enum RuleListLint {
     }
 
     /// ルール 1 件の問題。
-    public static func problems(in rule: Any, forbidExceptions: Bool) -> [String] {
+    public static func problems(in rule: Any, forbidAllURLExceptions: Bool) -> [String] {
         guard let rule = rule as? [String: Any] else {
             return ["オブジェクトではありません"]
         }
@@ -82,7 +99,18 @@ public enum RuleListLint {
             problems.append("trigger がないか、オブジェクトではありません")
         }
         if let action = rule["action"] as? [String: Any] {
-            problems += actionProblems(action, forbidExceptions: forbidExceptions)
+            problems += actionProblems(action)
+            if forbidAllURLExceptions, action["type"] as? String == "ignore-previous-rules",
+               let trigger = rule["trigger"] as? [String: Any],
+               let filter = trigger["url-filter"] as? String, !filter.isEmpty {
+                let caseSensitive = trigger["url-filter-is-case-sensitive"] as? Bool ?? false
+                if matchesEveryURL(filter, caseSensitive: caseSensitive) {
+                    problems.append("拡張の中で 2 番目以降のカテゴリに、すべての URL に効く例外ルール（ignore-previous-rules、url-filter \(quoted(filter))）があります。前のカテゴリのルールまで、サイトごと打ち消してしまう")
+                } else if let suffix = matchedWideSuffix(filter, caseSensitive: caseSensitive) {
+                    // 日本のサイト（.jp）すべてなどは、この利用者にとっては、すべての URL とほぼ同じ
+                    problems.append("拡張の中で 2 番目以降のカテゴリに、「.\(suffix)」のサイトすべてに効く例外ルール（ignore-previous-rules、url-filter \(quoted(filter))）があります。前のカテゴリのルールまで、そのサイトすべてで打ち消してしまう")
+                }
+            }
         } else {
             problems.append("action がないか、オブジェクトではありません")
         }
@@ -162,7 +190,7 @@ public enum RuleListLint {
         return problems
     }
 
-    static func actionProblems(_ action: [String: Any], forbidExceptions: Bool) -> [String] {
+    static func actionProblems(_ action: [String: Any]) -> [String] {
         var problems: [String] = []
         for key in action.keys.sorted() where !allowedActionKeys.contains(key) {
             problems.append("action に知らないキー「\(key)」があります")
@@ -182,10 +210,94 @@ public enum RuleListLint {
                 problems.append("css-display-none に selector がないか、空です")
             }
         }
-        if type == "ignore-previous-rules", forbidExceptions {
-            problems.append("拡張の中で 2 番目以降のカテゴリに、例外ルール（ignore-previous-rules）があります。前のカテゴリのルールまで打ち消してしまう")
-        }
         return problems
+    }
+
+    /// すべての URL に当たるかを確かめる見本の URL。関係のないドメイン名で、ホストもパスもばらばらにしてあるので、
+    /// ホストやパスを限った url-filter は、どれかに当たらない。
+    ///
+    /// IP アドレス・ポート・punycode の URL は入れない。「すべてに当たれば失敗」なので、変わった見本が 1 つあるだけで、
+    /// ほとんどのサイトに当たる url-filter（`[a-z]\.[a-z]`・`^https?:\/\/[a-z]` など）が通ってしまうため。
+    static let everyURLSamples: [[String]] = urlSamples([
+        "amido-check-a.invalid/",
+        "www.amido-check-b.test/path/to/page.html?q=1&r=2",
+        "cdn.amido-check-c.example/x/y.js",
+    ])
+
+    /// サイトの範囲が広すぎるとみなす、トップレベルドメインなど（公開サフィックス）。
+    /// 日本のサイトの多くが入るもの（jp と co.jp などの属性型）と、よく使うもの。すべての一覧ではない。
+    /// 並びは、広いものを先にする（メッセージに出すのは、最初に当たったもの）。
+    public static let wideSuffixes = [
+        "jp", "co.jp", "ne.jp", "or.jp", "ac.jp", "ad.jp", "ed.jp", "go.jp", "gr.jp", "lg.jp",
+        "com", "net", "org", "info", "io",
+    ]
+
+    /// wideSuffixes のそれぞれについて、そのサフィックスの関係のないサイト 2 つの見本の URL。
+    static let wideSuffixSamples: [(suffix: String, samples: [[String]])] = wideSuffixes.map { suffix in
+        (suffix, urlSamples(["www.amido-check-d.\(suffix)/", "amido-check-e.\(suffix)/path/to/page.html?q=1&r=2"]))
+    }
+
+    /// ホストから先（`example.com/path`）の並びから、https と http の見本の組を作る。
+    static func urlSamples(_ rests: [String]) -> [[String]] {
+        ["https://", "http://"].map { scheme in rests.map { scheme + $0 } }
+    }
+
+    /// url-filter が、すべての URL に当たるか（`.*`・`^https?://`・`/`・`[a-z]\.[a-z]` など）。
+    ///
+    /// 正規表現の形を数え上げるのではなく、見本の URL（everyURLSamples）で確かめる。
+    /// https の見本のすべてか、http の見本のすべてに当たれば、すべての URL に当たるとみなす。
+    /// 読めない正規表現は false（読めないことは urlFilterProblem か WebKit のコンパイルで分かる）。
+    public static func matchesEveryURL(_ pattern: String, caseSensitive: Bool = false) -> Bool {
+        guard let regex = regex(pattern, caseSensitive: caseSensitive) else {
+            return false
+        }
+        return matchesAll(regex, everyURLSamples)
+    }
+
+    /// url-filter が、`.jp` や `.co.jp` などのサイトすべてに当たるなら、そのサフィックスを返す
+    ///（`@@||*.jp^`・`@@||co.jp^` を変換した形など）。すべての URL に当たるもの（matchesEveryURL）も、ここで当たる。
+    public static func matchedWideSuffix(_ pattern: String, caseSensitive: Bool = false) -> String? {
+        guard let regex = regex(pattern, caseSensitive: caseSensitive) else {
+            return nil
+        }
+        return wideSuffixSamples.first { matchesAll(regex, $0.samples) }?.suffix
+    }
+
+    private static func regex(_ pattern: String, caseSensitive: Bool) -> NSRegularExpression? {
+        try? NSRegularExpression(pattern: pattern, options: caseSensitive ? [] : [.caseInsensitive])
+    }
+
+    /// 見本の組（https・http）のどちらかで、すべてに当たるか。
+    private static func matchesAll(_ regex: NSRegularExpression, _ sampleSets: [[String]]) -> Bool {
+        sampleSets.contains { samples in
+            samples.allSatisfy { url in
+                regex.firstMatch(in: url, range: NSRange(url.startIndex..., in: url)) != nil
+            }
+        }
+    }
+
+    /// 変換器が `||example.com^` から作る、ホストだけを限った url-filter か
+    ///（`^[^:]+://+([^:/]+\.)?example\.com[/:]`。末尾の `[/:]` と `.*` はなくてもよい）。
+    /// ホストが `co.jp` のようなサフィックスだけのもの（wideSuffixes）は、ホストを限っていないので false。
+    public static func isHostOnlyURLFilter(_ pattern: String) -> Bool {
+        let prefix = #"^[^:]+://+([^:/]+\.)?"#
+        guard pattern.hasPrefix(prefix) else {
+            return false
+        }
+        var rest = Substring(pattern.dropFirst(prefix.count))
+        for suffix in [".*", "$"] where rest.hasSuffix(suffix) {
+            rest = rest.dropLast(suffix.count)
+        }
+        if rest.hasSuffix("[/:]") {
+            rest = rest.dropLast("[/:]".count)
+        }
+        // 残りはホスト名（英数字と - と \.）だけ
+        let host = rest.replacingOccurrences(of: #"\."#, with: ".")
+        return !host.isEmpty && host.contains(".") && !wideSuffixes.contains(host.lowercased())
+            && host.unicodeScalars.allSatisfy { scalar in
+                ("a"..."z").contains(scalar) || ("A"..."Z").contains(scalar) || ("0"..."9").contains(scalar)
+                    || scalar == "-" || scalar == "."
+            }
     }
 
     /// url-filter（と if-top-url など）の正規表現が、WebKit の URLFilterParser で読めるか。

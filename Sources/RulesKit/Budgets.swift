@@ -50,7 +50,7 @@ public struct ExtensionUsage: Codable, Sendable, Equatable {
     public var categories: [RuleCategory]
     /// カテゴリの合計に、アプリが足す分（appReservedRules）を加えた件数。
     public var rules: Int
-    /// カテゴリのファイルの合計に、許可サイトのルールの分（appReservedBytes）を加えたバイト数。
+    /// カテゴリのファイルの合計に、アプリが足すルール（許可サイトと自分のルール）の分（appReservedBytes）を加えたバイト数。
     public var bytes: Int
     public var warnRules: Int
     public var failRules: Int

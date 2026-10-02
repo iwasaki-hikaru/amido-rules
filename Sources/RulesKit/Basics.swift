@@ -14,9 +14,12 @@ public struct RulesError: Error, LocalizedError, CustomStringConvertible, Sendab
 }
 
 /// 配信するカテゴリ（docs/format.md）。宣言の順番が、manifest の並び順になる。
+/// 拡張の中の順番（config/budgets.json）も、この順番にそろえる（プラスは annoyance → privacy → scam）。
 public enum RuleCategory: String, CaseIterable, Codable, Sendable, Comparable {
     case basic
     case annoyance
+    /// トラッキング防止（EasyPrivacy）。
+    case privacy
     case scam
 
     public var order: Int {
@@ -32,6 +35,7 @@ public enum RuleCategory: String, CaseIterable, Codable, Sendable, Comparable {
         switch self {
         case .basic: "cb-check-basic"
         case .annoyance: "cb-check-annoyance"
+        case .privacy: "cb-check-privacy"
         case .scam: nil
         }
     }

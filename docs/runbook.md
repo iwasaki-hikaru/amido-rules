@@ -29,9 +29,11 @@
 3. 失敗していたら、「週 1 回のルールの公開が失敗しました」という issue ができています。[公開が失敗したとき](#公開が失敗したとき)の手順で対応します。
    - 失敗しても、本番には前の版がそのまま残っています。利用者への影響は「ルールの更新が止まる」だけです。
 4. 月に 1 回くらい、上流のリストの先頭の行を確かめます。`report.json`（実行の artifact「rules-out」）の各ソースの `headerLines` に、ライセンス・版・更新日の行が記録されています。
-   - 対象：EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List。
+   - 対象：EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List、EasyPrivacy。
    - `License`・`Licence` の行が変わっていたら、[licensing.md](licensing.md) を見直します。見直すまでは、そのソースを `sources.yml` で `enabled: false` にすることも考えます（件数が大きく変わるので、[件数の変化で CI が止まったとき](#件数の変化で-ci-が止まったとき)の手順で許可する）。
-   - 2026-10-01 の時点：EasyList は `! Licence: https://easylist.to/pages/licence.html`、Fanboy の 2 つは `! License: http://creativecommons.org/licenses/by/3.0/`。
+   - 2026-10-01 の時点：EasyList は `! Licence: https://easylist.to/pages/licence.html`、Fanboy の 2 つは `! License: http://creativecommons.org/licenses/by/3.0/`。EasyPrivacy は EasyList と同じ行（2026-10-02 に確認）。
+5. EasyPrivacy の除いた節を確かめます。`summary.md` の「ソース」の下に「EasyPrivacy：節を N 個除きました」が出ます（2026-10-02 の時点で 20 個）。数が大きく変わったら、上流が節を足したか、名前を変えたかを確かめます（[EasyPrivacy の節を除けなかったとき](#easyprivacy-の節を除けなかったとき)）。
+6. `summary.md` の「前のカテゴリにも効く例外ルール」で、privacy の例外の数と、そのうちホストだけを限ったものの数を見ます。急に増えていたら、どのホストかを `build/out/v1/lists/privacy.*.json`（実行の artifact）で確かめます。annoyance のルールが、そのホストで効かなくなっているかもしれません。
 
 ### 2. 定期実行が止まっていないかを確かめる
 
@@ -67,7 +69,9 @@
 |---|---|---|---|
 | `custom/basic.txt` | basic（無料） | 基本 | 広告のブロック、basic の中の誤ブロックの例外 |
 | `custom/annoyance.txt` | annoyance（プレミアム） | プラス | 迷惑な表示（SNS の共有・いいね・フォローのボタン、通知の案内、アプリへの誘導）のうち、Fanboy のリストにないもの。Fanboy のリストから外すための例外（`#@#`）と、annoyance の中の例外 |
-| `custom/scam.txt` | scam（プレミアム・第 2 段階） | プラス | 詐欺サイトのブロック。**例外ルール（`@@…`）は書けない**（CI が失敗する。理由は README の「例外ルールが効く範囲」） |
+| `custom/scam.txt` | scam（プレミアム・第 2 段階） | プラス | 詐欺サイトのブロック。**すべての URL に効く例外ルール（`@@||example.jp^$document` など）は書けない**（CI が失敗する。理由は README の「例外ルールが効く範囲」）。URL を限った例外は書けるが、前のカテゴリ（annoyance・privacy）にも効くので、なるべく書かない |
+
+privacy（トラッキング防止）の自作ルールのファイルは、まだありません。EasyPrivacy のせいでサイトが崩れ、例外を足すときは、`custom/privacy.txt` を作り、`sources.yml` に `category: privacy` の項目を足します（ほかの自作ルールと同じ書き方。テストの `SourcesTests` の件数も直す）。privacy は拡張の 2 番目なので、例外は URL やホストを限ったもの（例：`@@||googletagmanager.com^$domain=example.jp`）にします。すべての URL に効く例外（`@@||example.jp^$document` など）は CI が失敗します。そのサイトで全部を止めたいときは、利用者に許可サイトを案内します。
 
 #### 手順
 
@@ -118,6 +122,7 @@
 - 「広告あり」は、2026-09-29 に取った HTML に広告配信の読み込み（doubleclick・prebid・taboola など）があったことによる。どんな広告が出るかは確かめていない
 - プレミアム（annoyance。Fanboy の 2 つのリスト）の確認用のサイトは、SNS の共有ボタンや「通知を受け取りますか」の案内が出るページを選ぶ。日本の主なサイトでは、見た目が変わらないことも多い（2026-10-01 の確認では、主要 10 サイトのうち見た目が変わったのは Game8 の共有ボタンだけ。本文が隠れたページは 14 ページで 0）
 - プレミアムで、同意のダイアログ・ログイン・有料記事の案内・コメント欄・年齢確認が消えていないかも見る（消えていたら、[4.](#4-自作ルールを足す) の手順で例外を書く）
+- トラッキング防止（privacy。EasyPrivacy）もオンにして見る。EasyPrivacy は Google タグマネージャー（googletagmanager.com）を丸ごと止めるので、それで読み込むチャットや同意の画面が出なくなるサイトがある（上流は、そのための例外を約 510 のドメインに持っている。2026-10-02 に確認）。楽天市場では `/akam/13/` の読み込みが止まるので、ボットの確認の画面が出ないかも見る（2026-10-02 の時点で未確認）。崩れていたら、アプリのホームで「トラッキング防止」だけをオフにして見比べ、原因が privacy かを確かめる
 
 | 区分 | サイト | 確かめること | 根拠 | 最後に確かめた日 | 結果 |
 |---|---|---|---|---|---|
@@ -177,13 +182,48 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 
 本番の manifest を取得できないとき（ネットワークの失敗、5xx）も、比べられないので失敗にします。しばらくしてから流し直してください。
 
+### EasyPrivacy を初めて公開するとき（privacy が新しく入る）
+
+- 2026-10-02 に、privacy（トラッキング防止）を新しいカテゴリとして足しました（`sources.yml` の EasyPrivacy）。
+- 件数の変化の検査は、前の版になかったカテゴリを比べません（「新しい」と出るだけ）。そのため、privacy が初めて入る公開では、この検査では止まりません。annoyance と basic の件数は変わりません。
+- 公開したあと、`/check` で「トラッキング防止」が「有効」になることを、プレミアムの状態で確かめます。
+
 ### Fanboy のリストを初めて公開するとき（annoyance の件数が大きく増える）
 
 - 2026-10-01 に、annoyance に Fanboy's Social Blocking List と Fanboy's Notifications List を足しました（`sources.yml`）。
 - 本番に、annoyance が 1 件（`/check` 用のルールだけ）の版がすでにあると、次の公開で annoyance が 1 件から約 4,243 件になります（2026-10-01 の手元のビルド）。件数の変化の検査（30% 超かつ 100 件超）を超えるので、PR の検査も公開も止まります。
 - これは意図した変化です。[上の 3.](#対応) のとおり、PR にはラベル `allow-count-change` を付け、マージしたあとは「Run workflow」で `allow_count_change` にチェックを付けて実行します。
 - 本番に manifest がまだない、最初の公開（[初回の公開](#初回の公開)）では、件数を比べないので、この手順は要りません。
-- 公開したあと、`/check` で「プラス」が「有効」になること、見本のページ（`site/demo/social.html`。本番では `/demo/social`）で、見本の共有ボタンと通知の案内が消えることを確かめます（プレミアムの状態で）。
+- 公開したあと、`/check` で「迷惑な表示」が「有効」になること、見本のページ（`site/demo/social.html`。本番では `/demo/social`）で、見本の共有ボタンと通知の案内が消えることを確かめます（プレミアムの状態で）。
+
+---
+
+## 例外ルールの検査で CI が止まったとき（privacy・scam）
+
+### 何が起きたか
+
+拡張の中で 2 番目以降のカテゴリ（プラスの privacy と scam）の例外ルールは、同じ拡張の前のカテゴリ（annoyance など）にも効きます。そのうち、**すべての URL に効く例外**（`url-filter` が `.*` など。上流の `@@||example.com^$document`・`@@||example.com^$generichide`・`@@*$domain=example.com` などを変換したもの）があると、前のカテゴリのルールをそのサイトでまるごと止めてしまうので、rulestool は失敗します（[format.md](format.md) の「例外ルールが効く範囲」）。
+
+エラーは「privacy：rules[番号]: 拡張の中で 2 番目以降のカテゴリに、すべての URL に効く例外ルール……」の形で、実行の「Summary」のエラーに出ます。止まっているあいだも、本番には前の版がそのまま残っています。利用者への影響は「ルールの更新が止まる」だけです（basic の更新も止まります）。
+
+2026-10-02 の時点では、EasyPrivacy にこの形の例外は 0 件です。上流が足したときに起きます。
+
+### 対応
+
+1. どのルールかを確かめる。`build/work/privacy.txt`（実行の artifact、または手元の `scripts/build-local.sh --online`）で、`$document`・`$generichide`・`$elemhide`・`$genericblock` の付いた `@@` の行や、`@@*$domain=…` の形の行を探します。上流の EasyPrivacy（https://easylist.to/easylist/easyprivacy.txt ）でも同じ行を探し、どの節にあるか、何のための例外か（GitHub の EasyList の履歴）を確かめます。
+2. 決める。どれも、決めてから PR にします（根拠と理由を残す）。
+   - **その例外を除く**：今の仕組みには、上流の 1 行だけを除く設定はありません。除くなら、その行を含む節を `exclude_sections` で除くか、rulestool に行を除く設定を足す（ツールの変更。テストを付ける）ことになります。除くと、上流がそのサイトの崩れを直した分が戻らないことに注意します。
+   - **privacy を拡張の 1 番目に移す**：`config/budgets.json` とアプリの `RuleCategory`（BlockerCore）を同時に変える必要があり、アプリの更新が要ります。今のアプリには効かないので、急ぎの対応には使えません。
+   - **EasyPrivacy をいったん外す**：`sources.yml` で `enabled: false` にします。privacy が manifest からなくなるので、件数の変化の検査で止まります。[件数の変化で CI が止まったとき](#件数の変化で-ci-が止まったとき)の手順で許可します。アプリでは、トラッキング防止のスイッチが出なくなります。
+3. 急がないなら、何もしなくても本番は前の版のままです。上流が例外を狭めることもあるので、次の週の実行を待つこともできます。ただし、basic（EasyList）の更新も一緒に止まるので、長く止めないようにします。
+
+## EasyPrivacy の節を除けなかったとき
+
+`sources.yml` の EasyPrivacy は、見出しが `! *** easylist:easyprivacy/easyprivacy_specific_cname_` で始まる節（CNAME の節）を除きます（`exclude_sections`）。当たる節が 1 つもないと、「EasyPrivacy：sources.yml の exclude_sections（…）に当たる節が 1 つもありません」で失敗します。除かずに公開すると、privacy が約 2.3 万件から約 5.6 万件に増えるためです（プラスが約 6 万件になる。iOS 18 では 4.5 万件を超えると読み込みに失敗するという報告がある。アプリの docs/device-verification.md）。
+
+1. 上流の EasyPrivacy（https://easylist.to/easylist/easyprivacy.txt ）を開き、`! *** ` で始まる見出しの行を確かめます（`curl -s https://easylist.to/easylist/easyprivacy.txt | grep -n '^! \*\*\* '`）。
+2. CNAME の節の名前が変わっていたら、`sources.yml` の `exclude_sections` を新しい名前の始まりに直します。節が 2 つの名前に分かれたなど、1 つの始まりで書けないときは、rulestool に複数の値を書けるようにする変更が要ります（ツールの変更。テストを付ける）。
+3. 手元で `scripts/build-local.sh --online` を実行し、`build/out/summary.md` の「EasyPrivacy：節を N 個除きました」と、privacy の件数（2026-10-02 の時点で約 2.3 万件）を確かめてから PR にします。
 
 ---
 

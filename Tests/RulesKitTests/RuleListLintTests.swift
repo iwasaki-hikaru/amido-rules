@@ -4,16 +4,16 @@ import Testing
 
 @Suite("変換後のリストの検査（iOS 17 の WebKit に合わせる）")
 struct RuleListLintTests {
-    func lint(_ json: String, forbidExceptions: Bool = false, maxIssues: Int = 200) -> LintReport {
-        RuleListLint.lint(Data(json.utf8), forbidExceptions: forbidExceptions, maxIssues: maxIssues)
+    func lint(_ json: String, forbidAllURLExceptions: Bool = false, maxIssues: Int = 200) -> LintReport {
+        RuleListLint.lint(Data(json.utf8), forbidAllURLExceptions: forbidAllURLExceptions, maxIssues: maxIssues)
     }
 
     func rule(trigger: String = #""url-filter":".*""#, action: String = #""type":"block""#) -> String {
         "[{\"trigger\":{\(trigger)},\"action\":{\(action)}}]"
     }
 
-    func issues(trigger: String = #""url-filter":".*""#, action: String = #""type":"block""#, forbidExceptions: Bool = false) -> [String] {
-        lint(rule(trigger: trigger, action: action), forbidExceptions: forbidExceptions).issues
+    func issues(trigger: String = #""url-filter":".*""#, action: String = #""type":"block""#, forbidAllURLExceptions: Bool = false) -> [String] {
+        lint(rule(trigger: trigger, action: action), forbidAllURLExceptions: forbidAllURLExceptions).issues
     }
 
     @Test("変換器が出す形のルールは通る")
@@ -170,14 +170,125 @@ struct RuleListLintTests {
         }
     }
 
-    @Test("拡張の中で 2 番目以降のカテゴリには、例外ルールを入れられない")
-    func exceptionScope() {
-        let json = rule(trigger: #""url-filter":".*","if-domain":["*example.com"]"#, action: #""type":"ignore-previous-rules""#)
-        #expect(lint(json, forbidExceptions: false).isValid)
-        let report = lint(json, forbidExceptions: true)
+    static let exception = #""type":"ignore-previous-rules""#
+
+    @Test(
+        "拡張の中で 2 番目以降のカテゴリには、すべての URL に効く例外ルールを入れられない（条件が付いていても）",
+        arguments: [
+            #""url-filter":".*","if-domain":["*example.com"]"#,
+            #""url-filter":".*""#,
+            #""url-filter":"^.*$""#,
+            #""url-filter":".*","resource-type":["image"],"if-domain":["*example.com"]"#,
+            #""url-filter":".*","load-type":["third-party"]"#,
+            #""url-filter":"^https?://","unless-domain":["*example.com"]"#,
+            #""url-filter":"^https:\/\/","if-domain":["*example.com"]"#,
+            #""url-filter":"^[^:]+://+""#,
+            #""url-filter":"\/""#,
+            // IP アドレスの URL にだけ当たらないもの（ほとんどのサイトに当たる）
+            #""url-filter":"[a-z]\\.[a-z]""#,
+            #""url-filter":"^https?:\\/\\/[a-z]""#,
+        ]
+    )
+    func allURLExceptionsFail(trigger: String) {
+        let json = rule(trigger: trigger, action: Self.exception)
+        #expect(lint(json, forbidAllURLExceptions: false).isValid)
+        let report = lint(json, forbidAllURLExceptions: true)
         #expect(!report.isValid)
         #expect(report.issues.first?.contains("2 番目以降のカテゴリ") == true)
+        #expect(report.issues.first?.contains("すべての URL") == true)
         #expect(report.issues.first?.hasPrefix("rules[0]:") == true)
+    }
+
+    @Test(
+        "2 番目以降のカテゴリには、.jp などのサイトすべてに効く例外ルールも入れられない",
+        arguments: [
+            // @@||*.jp^
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?.*\\.jp[/:&?]""#, "jp"),
+            // @@||jp^
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?jp[/:]""#, "jp"),
+            // @@.jp/
+            (#""url-filter":"\\.jp\/""#, "jp"),
+            // @@||*.co.jp^
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?.*\\.co\\.jp[/:&?]""#, "co.jp"),
+            // @@||co.jp^（if-domain が付いていても）
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?co\\.jp[/:]","if-domain":["*example.jp"]"#, "co.jp"),
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?ne\\.jp[/:]""#, "ne.jp"),
+            (#""url-filter":"^[^:]+://+([^:/]+\\.)?com[/:]""#, "com"),
+        ]
+    )
+    func wideSuffixExceptionsFail(trigger: String, suffix: String) {
+        let json = rule(trigger: trigger, action: Self.exception)
+        #expect(lint(json, forbidAllURLExceptions: false).isValid)
+        let report = lint(json, forbidAllURLExceptions: true)
+        #expect(!report.isValid)
+        #expect(report.issues.first?.contains("2 番目以降のカテゴリ") == true)
+        #expect(report.issues.first?.contains("「.\(suffix)」のサイトすべて") == true, "\(report.issues)")
+        // ホストだけを限った例外には数えない
+        #expect(report.hostOnlyExceptionCount == 0)
+    }
+
+    @Test(
+        "URL やホストを限った例外ルールは、2 番目以降のカテゴリでも通る",
+        arguments: [
+            #""url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.example[/:]""#,
+            #""url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.example[/:]","if-domain":["*example.jp"]"#,
+            #""url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.example\/path\/x\\.js""#,
+            #""url-filter":"\/track\\.js""#,
+            #""url-filter":"^https:\/\/cdn\\.example\\.com\/","load-type":["third-party"]"#,
+            #""url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.example\\.co\\.jp[/:]""#,
+            #""url-filter":"^[^:]+://+([^:/]+\\.)?example\\.jp[/:]""#,
+        ]
+    )
+    func limitedExceptionsPass(trigger: String) {
+        let report = lint(rule(trigger: trigger, action: Self.exception), forbidAllURLExceptions: true)
+        #expect(report.isValid, "\(report.issues)")
+        #expect(report.exceptionCount == 1)
+    }
+
+    @Test("URL の大文字と小文字を区別する例外は、見本の URL もそのまま比べる")
+    func caseSensitiveException() {
+        let trigger = #""url-filter":"^HTTPS?://","url-filter-is-case-sensitive":true"#
+        #expect(lint(rule(trigger: trigger, action: Self.exception), forbidAllURLExceptions: true).isValid)
+        #expect(!lint(rule(trigger: #""url-filter":"^HTTPS?://""#, action: Self.exception), forbidAllURLExceptions: true).isValid)
+    }
+
+    @Test("例外ルールと、ホストだけを限った例外ルールの数を数える（失敗にはしない）")
+    func countsExceptions() {
+        let json = #"""
+        [
+          {"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?host-only\\.example[/:]"},"action":{"type":"ignore-previous-rules"}},
+          {"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?host-third\\.example[/:]","load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}},
+          {"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?host-domain\\.example[/:]","if-domain":["*site.example"]},"action":{"type":"ignore-previous-rules"}},
+          {"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?host-path\\.example\\/path\\/x\\.js"},"action":{"type":"ignore-previous-rules"}},
+          {"trigger":{"url-filter":"\\/track\\.js"},"action":{"type":"ignore-previous-rules"}},
+          {"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?host-only\\.example[/:]"},"action":{"type":"block"}}
+        ]
+        """#
+        let report = lint(json, forbidAllURLExceptions: true)
+        #expect(report.isValid, "\(report.issues)")
+        #expect(report.exceptionCount == 5)
+        #expect(report.hostOnlyExceptionCount == 3)
+    }
+
+    @Test(
+        "変換器が作るホストだけの url-filter を見分ける",
+        arguments: [
+            (#"^[^:]+://+([^:/]+\.)?example\.com[/:]"#, true),
+            (#"^[^:]+://+([^:/]+\.)?example\.com[/:].*"#, true),
+            (#"^[^:]+://+([^:/]+\.)?example\.com"#, true),
+            (#"^[^:]+://+([^:/]+\.)?sub-1\.example\.co\.jp[/:]"#, true),
+            (#"^[^:]+://+([^:/]+\.)?example\.com\/path"#, false),
+            (#"^[^:]+://+([^:/]+\.)?example\.com[/:].*\/track"#, false),
+            (#"^[^:]+://+([^:/]+\.)?"#, false),
+            // サフィックスだけ（co.jp のサイトすべて）
+            (#"^[^:]+://+([^:/]+\.)?co\.jp[/:]"#, false),
+            (#"^[^:]+://+([^:/]+\.)?NE\.JP[/:]"#, false),
+            (#".*"#, false),
+            (#"\/track\.js"#, false),
+        ]
+    )
+    func hostOnlyURLFilter(pattern: String, expected: Bool) {
+        #expect(RuleListLint.isHostOnlyURLFilter(pattern) == expected, "\(pattern)")
     }
 
     @Test("問題はルールの番号（0 始まり）で示す")
