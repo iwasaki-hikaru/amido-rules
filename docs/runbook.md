@@ -318,7 +318,7 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 
 公開のワークフローは、iOS 18.6 のシミュレーターでだけコンパイルを確かめます。iOS 17 は手動です。
 
-1. 「Actions」→「iOS 17 の WebKit でコンパイル（手動）」→「Run workflow」。`run_id` は空でよい（main での最後の成功した公開のものを使う）
+1. 「Actions」→「iOS 17 の WebKit でコンパイル（手動）」→「Run workflow」。`run_id` は空でよい（main で「変換と検査」と「iOS 18.6 の WebKit でコンパイル」のジョブが成功した、最後の公開の実行のものを使う。「署名と公開」が失敗したり、承認を待っていたりしても使える）
 2. iOS 17.0 と 17.5 の両方が成功すればよい。失敗したら、上の表の「iOS 18.6 の WebKit でコンパイル」と同じように直す
 3. **2026-11-02 以降は使えません**（iOS 17 のシミュレーターがある macos-14 のイメージがなくなる。https://github.com/actions/runner-images/issues/13518 ）。それ以降は、このワークフローを消し、iOS 17 の実機か、手元に iOS 17 のランタイムを入れたシミュレーターで、`.github/scripts/ios-webkit-check.sh 17.5 <合成した JSON>` を実行する（合成した JSON は、公開の実行の成果物 `rules-compose`）
 
