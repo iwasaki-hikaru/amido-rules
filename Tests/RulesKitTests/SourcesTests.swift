@@ -227,6 +227,36 @@ struct SourcesValidationTests {
         #expect(problems(lines)?.contains("相対パス") == true)
     }
 
+    @Test(
+        "path の「./」は取り除き、custom/ の下の自作ルールとして扱う（根拠の検査を抜けない）",
+        arguments: ["custom/x.txt", "./custom/x.txt", "custom/./x.txt", "././custom/x.txt"]
+    )
+    func pathIsNormalized(path: String) throws {
+        let lines = Self.validLines.map { $0.hasPrefix("url:") ? "path: \(path)" : $0 }
+        let entry = try #require(try SourcesFile.parse(Self.item(lines), denylist: TestEnvironment.repositoryDenylist).first)
+        #expect(entry.origin == .path("custom/x.txt"))
+        #expect(entry.locationDescription == "custom/x.txt")
+        #expect(entry.isCustom)
+    }
+
+    @Test(
+        "path は custom/ の下だけ（大文字小文字も区別する）",
+        arguments: ["x.txt", "./x.txt", "lists/x.txt", "Custom/x.txt", "CUSTOM/x.txt", "./Custom/x.txt", "custom", "./custom", ".", "customs/x.txt"]
+    )
+    func pathMustBeUnderCustom(path: String) {
+        let lines = Self.validLines.map { $0.hasPrefix("url:") ? "path: \(path)" : $0 }
+        #expect(problems(lines)?.contains("custom/ の下のファイル") == true)
+    }
+
+    @Test("path のソースは、書き方によらず自作ルールとして扱う")
+    func pathOriginIsAlwaysCustom() {
+        let entry = SourceEntry(
+            name: "x", origin: .path("./custom/x.txt"), license: "CC0-1.0", attribution: "x",
+            category: .basic, enabled: true, line: 1, slug: "x"
+        )
+        #expect(entry.isCustom)
+    }
+
     @Test("知らないキーはエラー（綴りの間違いを見つけるため）")
     func unknownKey() {
         #expect(problems(Self.validLines + ["licence: x"])?.contains("知らないキー「licence」") == true)

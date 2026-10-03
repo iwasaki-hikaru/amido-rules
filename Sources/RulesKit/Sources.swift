@@ -25,9 +25,11 @@ public struct SourceEntry: Sendable, Equatable {
     public var keepLinesContaining: String? = nil
 
     /// custom/ の下の自作ルール。各ルールに根拠のコメントが必要。
+    /// path のソースは custom/ の下だけに限る（SourcesFile.parse）。
+    /// 書き方しだいで根拠の検査を抜けないように、path のソースはすべて自作ルールとして扱う。
     public var isCustom: Bool {
-        if case .path(let path) = origin {
-            return path.hasPrefix("custom/")
+        if case .path = origin {
+            return true
         }
         return false
     }
@@ -142,12 +144,17 @@ public enum SourcesFile {
             case (nil, .some(let path)):
                 let line = item.fields["path"]?.line
                 let components = path.split(separator: "/", omittingEmptySubsequences: false)
+                // 「.」の部分は取り除いて比べる（./custom/a.txt は custom/a.txt と同じ）
+                let normalized = components.filter { $0 != "." }
                 if let hit = denylist.match(path) {
                     problem("path に使えないリスト（config/denylist.json の「\(hit)」）が含まれています：\(path)", line: line)
                 } else if path.hasPrefix("/") || path.contains("\\") || components.contains("..") || components.contains("") || path.contains("://") {
                     problem("path は、リポジトリの中の相対パスにしてください（/ で始めない、.. を含めない）：\(path)", line: line)
+                } else if normalized.count < 2 || normalized.first != "custom" {
+                    // 自作ルールの根拠の検査を抜けないように、path は custom/ の下だけにする（大文字小文字も区別する）
+                    problem("path は custom/ の下のファイルにしてください：\(path)", line: line)
                 } else {
-                    origin = .path(path)
+                    origin = .path(normalized.joined(separator: "/"))
                 }
             }
 

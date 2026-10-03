@@ -325,6 +325,20 @@ struct BuildPipelineTests {
         #expect(report.errors.contains { $0.hasPrefix("custom/annoyance.txt:1:") })
     }
 
+    @Test("path を ./custom/… と書いても、根拠の検査を抜けない")
+    func missingEvidenceFailsWithDotPath() async throws {
+        let root = try makeRepository(basic: "||ads.example.com^")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try write("||no-evidence.example.com^\n", to: root.appending(path: "custom/annoyance.txt"))
+        let sourcesFile = root.appending(path: "sources.yml")
+        let sources = try String(contentsOf: sourcesFile, encoding: .utf8)
+        try #require(sources.contains("path: custom/annoyance.txt"))
+        try write(sources.replacingOccurrences(of: "path: custom/annoyance.txt", with: "path: ./custom/annoyance.txt"), to: sourcesFile)
+        let report = await BuildPipeline.run(try options(root) { $0.skipCompileCheck = true })
+        #expect(!report.ok)
+        #expect(report.errors.contains { $0.hasPrefix("custom/annoyance.txt:1:") })
+    }
+
     @Test("前の manifest と比べて、件数が急に変わったら失敗（許可すれば通る）")
     func countChange() async throws {
         let root = try makeRepository(basic: "||ads.example.com^")
