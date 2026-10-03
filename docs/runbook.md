@@ -173,7 +173,7 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 
 1. まとめの表で、どのカテゴリが、何件から何件になったかを見る。
 2. 原因を確かめる。
-   - 上流の変化：`report.json`（実行の artifact「rules-out」）の各ソースの行数を、前の実行と比べる。上流のリスト（EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List）を直接開いて、壊れていないかを見る。
+   - 上流の変化：`report.json`（実行の artifact「rules-out」）の各ソースの行数を、前の実行と比べる。上流のリスト（EasyList、Fanboy's Social Blocking List、Fanboy's Notifications List、EasyPrivacy）を直接開いて、壊れていないかを見る。
    - こちらの変更：直前にマージした PR（リストを足した・外した、変換器を上げた、など）。
 3. **意図した変化・問題のない変化なら**：
    - main の公開：「Actions」→「ルールの公開」→「Run workflow」→ ブランチ `main`、「件数の大きな変化を許す」（`allow_count_change`）にチェック →「Run workflow」。
@@ -357,7 +357,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
    - `wrangler.jsonc` の `name`（`<Worker 名>`）
    - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`
 7. 署名の鍵を作って登録する：`scripts/keygen.sh <リポジトリの外のディレクトリ>`（[signing.md](signing.md)）。`keys/trusted-public-keys.json` とアプリの公開鍵を同じにする。
-8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、非公開の ios リポジトリの `docs/drafts/tokushoho.html` を `site/` に写して埋める（下書きには未発表の価格と個人情報の欄があるので、埋める前のものをこのリポジトリに入れない）。残りの数は `node .github/scripts/check-config.mjs` が表示します。`LICENSE-rules`・`NOTICE`・README の「【要記入】」も埋める。
+8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、非公開の ios リポジトリの `docs/drafts/tokushoho.html` を `site/` に写して埋める（下書きには未発表の価格と個人情報の欄があるので、埋める前のものをこのリポジトリに入れない）。残りの数は `node .github/scripts/check-config.mjs` が表示します。`NOTICE` の「【要記入】」も埋める。
 9. ライセンスの判断（[licensing.md](licensing.md)）を済ませ、決めたものに合わせて `LICENSE-rules`・`NOTICE`・`site/licenses.html` を直す。
 
 ### GitHub
@@ -384,7 +384,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
 17. 成功したら、次を確かめる：
     ```bash
     swift run -c release rulestool verify --base-url https://<配信ホスト>/
-    for page in / /privacy /terms /support /licenses /check; do
+    for page in / /privacy /terms /support /licenses /check /demo/news /demo/recipe /demo/social; do
       curl -s -o /dev/null -w "%{http_code} $page\n" "https://<配信ホスト>$page"
     done
     curl -sI https://<配信ホスト>/v1/manifest.json.sig | grep -i 'content-type\|cache-control'

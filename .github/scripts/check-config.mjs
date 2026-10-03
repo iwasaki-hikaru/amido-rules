@@ -4,7 +4,7 @@
 // 1. wrangler.jsonc：静的アセットだけの Worker になっているか
 //    （main・cache・run_worker_first があると、無料プランでもリクエストが課金の対象になる）
 // 2. site/_headers：Cloudflare の制限（100 ルール・1 行 2,000 文字）に収まり、必要なルールがあるか
-// 3. site/*.html：外部の読み込みや、CSP で止められる書き方（インラインのスクリプト・style 属性など）がないか
+// 3. site/ の .html（demo/ などのサブディレクトリも）：外部の読み込みや、CSP で止められる書き方（インラインのスクリプト・style 属性など）がないか
 // 4. deploy/：wrangler の版が固定されていて、package-lock.json と合っているか
 //
 // 使い方：node .github/scripts/check-config.mjs（リポジトリのルートで実行する）
@@ -197,14 +197,31 @@ function checkHeaders() {
   ok(before, `${file}：${rules.length} ルール`);
 }
 
-// --- 3. site/*.html ---
+// --- 3. site/ の .html ---
 // CSP（default-src 'none'; script-src 'self'; style-src 'self'）の下で動く書き方になっているか。
+// site/demo/ の見本のページも配信するので、サブディレクトリの .html も同じように検査する。
+
+// dir の中の .html を、サブディレクトリまで探して、dir からの相対パス（例 "demo/news.html"）で返す
+function htmlFiles(dir, prefix = "") {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const relative = prefix + entry.name;
+    if (entry.isDirectory()) {
+      found.push(...htmlFiles(join(dir, entry.name), `${relative}/`));
+    } else if (entry.name.endsWith(".html")) {
+      found.push(relative);
+    }
+  }
+  return found;
+}
+
 function checkHtml() {
   const before = failures;
   if (existsSync("site/v1")) {
     error("site/v1", "v1/ はツールが作るので、site/ には置かないでください");
   }
-  const pages = readdirSync("site").filter((name) => name.endsWith(".html"));
+  const pages = htmlFiles("site");
+  // 必ず要るページは site/ の直下にあるもの
   for (const required of ["index.html", "privacy.html", "terms.html", "support.html", "licenses.html", "check.html", "404.html"]) {
     if (!pages.includes(required)) error(`site/${required}`, "ありません");
   }

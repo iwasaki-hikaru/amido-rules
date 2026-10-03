@@ -53,7 +53,7 @@ rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy �
 | `config/distribution.json` | 配信ホスト（アプリに埋め込むもの）と `min_app_build` |
 | `keys/trusted-public-keys.json` | 署名の公開鍵（アプリに埋め込むものと同じにする） |
 | `Package.swift`・`Sources/`・`Tests/` | rulestool とそのテスト |
-| `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認）と `_headers` |
+| `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認）、`demo/` の見本のページ（ニュース・レシピ・SNS）と `_headers` |
 | `wrangler.jsonc` | Cloudflare Workers の設定（静的アセットだけ） |
 | `deploy/` | wrangler の版の固定（`package.json` と `package-lock.json`。CI では `npm ci`） |
 | `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成） |
@@ -151,7 +151,9 @@ swift run -c release rulestool build --help
 | `/v1/manifest.json.sig` | 署名（Base64） | 5 分 |
 | `/v1/lists/<category>.<hash8>.json` | ルールのリスト（名前に中身のハッシュが入る） | 1 年（immutable） |
 | `/privacy`・`/terms`・`/support`・`/licenses`・`/check` | サイトのページ | 既定 |
+| `/demo/news`・`/demo/recipe`・`/demo/social` | 見本のページ（スクリーンショットと動作の確かめ用。検索には出さない） | 既定 |
 
+- ページの URL は、拡張子なしの形（`/privacy`・`/demo/social` など）で書きます（`wrangler.jsonc` の `html_handling` が `auto-trailing-slash` のため）。
 - Cloudflare Workers の静的アセットだけを使います。`wrangler.jsonc` に `main`・`cache`・`run_worker_first` を入れると、無料プランでもリクエストが Worker の実行として数えられるので、入れません（CI で検査しています）。
 - 公開のたびに、本番の manifest が指している前の版のリストも一緒に置きます。更新の途中の利用者が 404 にならないようにするためです。
 
@@ -170,4 +172,4 @@ swift run -c release rulestool build --help
 
 ## 公開前に埋める値
 
-仮の値は「PLACEHOLDER」と「【要記入：…】」です。リポジトリの中を検索すると見つかります。手順は [docs/runbook.md の「最初の公開の準備」](docs/runbook.md#最初の公開の準備) にあります。
+仮の値は「【要記入：…】」です。リポジトリの中を検索すると見つかります。手順は [docs/runbook.md の「最初の公開の準備」](docs/runbook.md#最初の公開の準備) にあります。

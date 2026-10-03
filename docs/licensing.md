@@ -19,9 +19,9 @@
 |---|---|---|---|
 | 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | 仮に決めたもの。3.0 か 4.0 かは未決定（[3.](#3-cc-by-sa-30-と-40)） |
 | 自作ルール（`custom/*.txt`） | CC BY-SA 3.0 | 各ファイルの先頭、`LICENSE-rules` | 同上 |
-| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList と Fanboy の節がある） | 実装済み（annoyance と privacy は同梱せず、配信元から取得）。EasyPrivacy の節は、ios 側で足す必要がある【要対応】 |
+| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList・Fanboy・EasyPrivacy の節がある） | 実装済み（annoyance と privacy は同梱せず、配信元から取得） |
 | ツール（`Sources/`・`Tests/`・`scripts/`・`.github/` など） | 未定 | なし | 決まるまで LICENSE を置かない（[9.](#9-ツールのライセンス)） |
-| サイトのページ（`site/`） | 未定（権利は運営者） | `site/licenses.html` | 【要記入】 |
+| サイトのページ（`site/`） | 未定（権利は運営者） | `site/licenses.html` | 表記あり（「権利は、運営者にあります」）。ライセンスは未定（[9.](#9-ツールのライセンス)） |
 | 変換器（SafariConverterLib） | GPLv3 | `site/licenses.html`、`NOTICE` | CI で実行するだけで、配布しない（[5.](#5-変換器safariconverterlib)） |
 
 使っている上流のリストは、次の 4 つです（`sources.yml`）。
@@ -84,7 +84,7 @@
 - 扱い：
   - 変換したものは、privacy として CC BY-SA 3.0 で配る（EasyList・annoyance と同じ）。
   - 著作者は「The EasyList authors (https://easylist.to/)」と表示する。
-  - 名前を出す場所には、作者とは関係がないことを添える（`NOTICE`・`site/licenses.html`・`site/support.html`。アプリの `LicensesView` は ios 側で足す）。
+  - 名前を出す場所には、作者とは関係がないことを添える（`NOTICE`・`site/licenses.html`・`site/support.html`・アプリの `LicensesView`）。
 - 除いた部分：CNAME の節（見出しが `! *** easylist:easyprivacy/easyprivacy_specific_cname_` で始まる 20 の節。特定のサイトのサブドメインを 1 件ずつ並べたもので、ルールの行の約 6 割）を除いています。ただし、日本のサイトの計測を逃さないように、その節の中でも `.jp` を含む行は残しています（`sources.yml` の `exclude_sections` と `keep_lines_containing`）。件数を抑えるためです（全部入れると、変換後に約 5.6 万件）。除いたことは、`NOTICE`・`LICENSE-rules`・`site/licenses.html`・Release の説明に書いています。
 - 先頭の行は `[Adblock Plus 1.1]` です（EasyList は 2.0）。rulestool は `[Adblock …]` の行をすべて取り除きます。
 
@@ -135,7 +135,7 @@
 | 公開リポジトリ（rules） | 自作ルール、ツール、（変換後の JSON は置かない） | ライセンスの URI、著作者、変更の説明 | `LICENSE-rules`・`NOTICE` あり（どちらも EasyList と Fanboy の 2 つと EasyPrivacy を挙げている） |
 | 配信サイト（`/v1/lists/*.json`） | 変換後のリスト | 同上 | `/licenses` に表記。JSON 自体には書けない（[3.](#確かめていないこと)） |
 | GitHub Release | 公開した一式（`dist/` の tar.gz） | 同上 | 説明に URI と著作者（EasyList と Fanboy の 2 つと EasyPrivacy。作者とは関係がないことも書く。publish.yml の「GitHub Release に保管する」）、`NOTICE`・`LICENSE-rules` を添付 |
-| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に同じ表記を出す | `LicensesView` に表記あり（EasyList・Fanboy・自作のルール）。EasyPrivacy の節は ios 側で足す【要対応】 |
+| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に同じ表記を出す | `LicensesView` に表記あり（EasyList・Fanboy・EasyPrivacy・自作のルール） |
 
 ---
 
