@@ -17,7 +17,7 @@
 
 | 対象 | ライセンス | 表記の場所 | 状態 |
 |---|---|---|---|
-| 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | 仮に決めたもの。3.0 か 4.0 かは未決定（[3.](#3-cc-by-sa-30-と-40)） |
+| 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | **2026-10-04 に 3.0 のままと決定**（運営者が作業者の案を採用。[3.](#3-cc-by-sa-30-と-40)） |
 | 自作ルール（`custom/*.txt`） | CC BY-SA 3.0 | 各ファイルの先頭、`LICENSE-rules` | 同上 |
 | アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList・Fanboy・EasyPrivacy の節がある） | 実装済み（annoyance と privacy は同梱せず、配信元から取得） |
 | ツール（`Sources/`・`Tests/`・`scripts/`・`.github/` など） | 未定 | なし | 決まるまで LICENSE を置かない（[9.](#9-ツールのライセンス)） |
@@ -48,7 +48,7 @@
 - EasyList のファイルの先頭には `! Licence: https://easylist.to/pages/licence.html` の行があります（取得したファイルで確認）。
 - ダウンロードの URL：https://easylist.to/easylist/easylist.txt （`sources.yml` で使っているもの）
 
-このリポジトリでは、CC BY-SA の道を選んでいます（3.0 か 4.0 かは未決定）。
+このリポジトリでは、CC BY-SA の道を選んでいます（3.0。2026-10-04 に決定）。
 
 ### Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）
 
@@ -118,7 +118,9 @@
 - **配信する JSON そのものへの表記**：JSON の配列にはコメントを書けないので、リストのファイル自体にはライセンスの表記がありません。同じサイトの `/licenses` と、公開リポジトリの `LICENSE-rules`・`NOTICE` で表記しています。これで足りるかは確かめていません。【要確認】
   - 案：manifest にライセンスの URI と著作者の表記を足す（形式の変更になるので、足すなら `docs/format.md` とアプリを同時に直す。アプリが知らないキーを無視するかどうかも確かめる）。
 
-### 4.0 にする案（提案。既定では採用していない）
+### 4.0 にする案（2026-10-04 に、今は採らないと決めた）
+
+- 決めたこと：3.0 のまま。4.0 にしても、技術的保護手段（App Store）と EULA の論点は残るため。「以降」の許可があるので、あとから 4.0 にできる。App Store では Apple の標準の EULA のまま使い、DRM なしの同じリストを配信サイトと GitHub Release で公開し続ける
 
 - EasyList は「3.0 またはそれ以降」を許しているので、変換後のリストを CC BY-SA 4.0 で配ることもできます。
 - CC BY-SA 4.0 は、GPLv3 と一方向の互換があります（BY-SA 4.0 の作品を GPLv3 の作品に組み込める）。［確認済］ https://creativecommons.org/share-your-work/licensing-considerations/compatible-licenses/
@@ -152,7 +154,7 @@
 
 ### AdGuard Japanese filter（今は無効）
 
-`sources.yml` に `enabled: false` で入れてあります。使うかどうかは未決定です。
+`sources.yml` に `enabled: false` で入れてあります。**使わない**（2026-10-04 に運営者が作業者の案を採用。GPLv3 のリストを混ぜると、配るリストのライセンスが複雑になるため）。
 
 - AdGuard の資料では、ID 7、日本語向けの推奨リスト、「Fanboy's Japanese filter を元にした」とされています。［確認済］ https://adguard.com/kb/general/ad-filtering/adguard-filters/
 - ソースは AdguardTeam/AdguardFilters リポジトリにあり、その LICENSE は GPLv3 です。［確認済］ https://github.com/AdguardTeam/AdguardFilters
