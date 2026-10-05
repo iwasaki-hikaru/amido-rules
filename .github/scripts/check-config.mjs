@@ -235,7 +235,7 @@ function checkHtml() {
   }
   const pages = htmlFiles("site");
   // 必ず要るページは site/ の直下にあるもの
-  for (const required of ["index.html", "privacy.html", "terms.html", "support.html", "licenses.html", "check.html", "404.html"]) {
+  for (const required of ["index.html", "privacy.html", "terms.html", "support.html", "licenses.html", "check.html", "tokushoho.html", "404.html"]) {
     if (!pages.includes(required)) error(`site/${required}`, "ありません");
   }
   let placeholders = 0;

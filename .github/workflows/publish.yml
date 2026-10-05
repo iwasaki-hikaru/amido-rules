@@ -421,7 +421,7 @@ jobs:
               return 1
             fi
             "$RULESTOOL" verify --base-url "https://$HOST/" --keys keys/trusted-public-keys.json || return 1
-            for page in / /privacy /terms /support /licenses /check; do
+            for page in / /privacy /terms /support /licenses /check /tokushoho; do
               code=$(curl --silent --proto '=https' --output /dev/null --write-out '%{http_code}' "https://$HOST$page")
               if [ "$code" != 200 ]; then
                 echo "$page が HTTP $code です"

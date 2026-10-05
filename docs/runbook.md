@@ -347,7 +347,7 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
    - 「User Details」「Memberships」などの読み取り権限は付けない（付けると、認証に失敗したときの wrangler の出力に、アカウントのメールが出ることがある。このリポジトリの Actions のログは誰でも読める）。
    - 有効期限（TTL）を付け、期限の前に作り直す。手元で使うトークンは別に作り、使い終わったら無効にする。
    - できれば、このアプリ専用の Cloudflare アカウントにする（Workers Scripts の権限は、アカウントの中のすべての Worker に効くため）。アカウントの 2 段階認証は、セキュリティキーかパスキーにする。アカウント名にメールアドレスが入っていたら、入らない名前に変える。
-5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。App Store の App Privacy で「データの収集なし」と答える場合は、その前提になるので、公開のあとも設定を変えない（どう答えるかは ios リポジトリの判断材料で決める）。
+5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。プライバシーポリシーの 4. と、App Privacy の答え（ルールの取得の IP アドレスなどは、集めるデータに含めない。2026-10-04 に決めた答えは ios リポジトリの `docs/appstore/app-privacy.md`）の前提なので、公開のあとも設定を変えない。`check-config.mjs` が、記録を有効にする設定を失敗にする。
 
 ### このリポジトリの値
 
@@ -385,7 +385,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
 17. 成功したら、次を確かめる：
     ```bash
     swift run -c release rulestool verify --base-url https://<配信ホスト>/
-    for page in / /privacy /terms /support /licenses /check /demo/news /demo/recipe /demo/social; do
+    for page in / /privacy /terms /support /licenses /check /tokushoho /demo/news /demo/recipe /demo/social; do
       curl -s -o /dev/null -w "%{http_code} $page\n" "https://<配信ホスト>$page"
     done
     curl -sI https://<配信ホスト>/v1/manifest.json.sig | grep -i 'content-type\|cache-control'

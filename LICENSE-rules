@@ -47,8 +47,9 @@
 
 対象外
 ------
-上に挙げたもの以外（ツールのコード、スクリプト、ワークフロー、サイトのページ、ドキュメントなど）には、
-このライセンスは適用されません。それらのライセンスは未定です。
+上に挙げたもの以外には、このライセンスは適用されません。ツールのコード（Sources/、Tests/、scripts/、tools/、
+.github/、Package.swift、wrangler.jsonc、config/・deploy/ の設定ファイル）は MIT License です（LICENSE を参照）。
+それ以外（site/ のページ・画像・スタイル・スクリプト、docs/ の文書など）の権利は、運営者にあります。
 
 
 ----------------------------------------------------------------------
@@ -106,6 +107,9 @@ The converted rule lists are adaptations of the following lists.
 
 See NOTICE for full attribution.
 
-Everything else in this repository (tool code, scripts, workflows, site
-pages, documentation) is not covered by this license. Its license has not
-been decided yet.
+Everything else in this repository is not covered by this license. The
+tool code (Sources/, Tests/, scripts/, tools/, .github/, Package.swift, and
+the configuration files wrangler.jsonc, config/ and deploy/) is licensed
+under the MIT License (see LICENSE). All other files (the pages, images,
+styles and scripts in site/, the documents in docs/, etc.) are copyrighted
+by the operator, all rights reserved.

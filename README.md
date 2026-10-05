@@ -53,7 +53,7 @@ rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy �
 | `config/distribution.json` | 配信ホスト（アプリに埋め込むもの）と `min_app_build` |
 | `keys/trusted-public-keys.json` | 署名の公開鍵（アプリに埋め込むものと同じにする） |
 | `Package.swift`・`Sources/`・`Tests/` | rulestool とそのテスト |
-| `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認）、`demo/` の見本のページ（ニュース・レシピ・SNS）と `_headers` |
+| `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認・特定商取引法に基づく表記）、`demo/` の見本のページ（ニュース・レシピ・SNS）と `_headers` |
 | `wrangler.jsonc` | Cloudflare Workers の設定（静的アセットだけ） |
 | `deploy/` | wrangler の版の固定（`package.json` と `package-lock.json`。CI では `npm ci`） |
 | `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成） |
@@ -150,7 +150,7 @@ swift run -c release rulestool build --help
 | `/v1/manifest.json` | manifest（署名の対象） | 5 分 |
 | `/v1/manifest.json.sig` | 署名（Base64） | 5 分 |
 | `/v1/lists/<category>.<hash8>.json` | ルールのリスト（名前に中身のハッシュが入る） | 1 年（immutable） |
-| `/privacy`・`/terms`・`/support`・`/licenses`・`/check` | サイトのページ | 既定 |
+| `/privacy`・`/terms`・`/support`・`/licenses`・`/check`・`/tokushoho` | サイトのページ | 既定 |
 | `/demo/news`・`/demo/recipe`・`/demo/social` | 見本のページ（スクリーンショットと動作の確かめ用。検索には出さない） | 既定 |
 
 - ページの URL は、拡張子なしの形（`/privacy`・`/demo/social` など）で書きます（`wrangler.jsonc` の `html_handling` が `auto-trailing-slash` のため）。

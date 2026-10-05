@@ -284,10 +284,10 @@ Fanboy's Social Blocking List と Fanboy's Notifications List は、2026-10-01 �
 
 | 決めること | 選択肢 | 関係するところ |
 |---|---|---|
-| 変換後のリストのライセンス | CC BY-SA 3.0（今）／ CC BY-SA 4.0 ／ GPLv3 | [3.](#3-cc-by-sa-30-と-40)、[4.](#4-配る場所ごとの義務のまとめ) |
+| 変換後のリストのライセンス | CC BY-SA 3.0（2026-10-04 に決定。「以降」の許可があるので、あとから 4.0 にもできる） | [3.](#3-cc-by-sa-30-と-40)、[4.](#4-配る場所ごとの義務のまとめ) |
 | アプリに同梱するリストの扱い | 3.0 の §4(b)（4.0 は §3(b)(3)）の、技術的な手段・追加の条件の禁止との関係を確かめる | [3.](#確かめていないこと) |
 | manifest にライセンスの表記を足すか | 足す（形式の変更）／ 足さない | [3.](#確かめていないこと) |
-| AdGuard Japanese filter を使うか | 使わない（今）／ GPLv3 で使う | [6.](#adguard-japanese-filter今は無効) |
+| AdGuard Japanese filter を使うか | 使わない（2026-10-04 に決定） | [6.](#adguard-japanese-filter今は無効) |
 | annoyance に上流のリストを使うか | Fanboy's Social Blocking List と Fanboy's Notifications List を使う（2026-10-01 に決定）。ほかの候補を足すかは未決定 | [2.](#2-easylist)、[7.](#7-ほかの候補広告不快な要素日本向け) |
 | privacy に上流のリストを使うか | EasyPrivacy を使う（2026-10-02 に決定）。CNAME の節は `.jp` を含む行を除いて外す | [2.](#2-easylist) の「EasyPrivacy」 |
 | Fanboy のリストの 2 つのライセンス表示の扱い | CC BY-SA 3.0 で配り、著作者は「The EasyList authors」と表示する（今）。両方の条件を満たすと言えるかは専門家に確認 | [2.](#2-easylist) |
