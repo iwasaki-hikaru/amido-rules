@@ -53,7 +53,7 @@
 
 ### 3. 利用者からの報告を読む
 
-- 報告は Google フォームで受け取ります。回答の場所：【要記入：フォームの回答の確認場所（回答のタブ、またはつないだスプレッドシート）】
+- 報告は Google フォームで受け取ります。回答の場所：フォームの編集画面の「回答」タブ（スプレッドシートにつないだら、ここを直す）
 - 報告を、次のどれかに分けます。
   - **広告が消えない**：ルールを足す候補（[4.](#4-自作ルールを足す)）
   - **表示が崩れる・ボタンが押せない**（ブロックしすぎ）：例外ルールを足す候補。影響が大きいので先に対応する
@@ -358,7 +358,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
    - `wrangler.jsonc` の `name`（`<Worker 名>`）
    - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`
 7. 署名の鍵を作って登録する：`scripts/keygen.sh <リポジトリの外のディレクトリ>`（[signing.md](signing.md)）。`keys/trusted-public-keys.json` とアプリの公開鍵を同じにする。
-8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記を載せると決めたら、非公開の ios リポジトリの `docs/drafts/tokushoho.html` を `site/` に写して埋める（下書きには未発表の価格と個人情報の欄があるので、埋める前のものをこのリポジトリに入れない）。残りの数は `node .github/scripts/check-config.mjs` が表示します。`NOTICE` の「【要記入】」も埋める。
+8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記は `site/tokushoho.html`（2026-10-05 に載せた。価格を変えたら直す）。残りの数は `node .github/scripts/check-config.mjs` が表示します
 9. ライセンスの判断（[licensing.md](licensing.md)）を済ませ、決めたものに合わせて `LICENSE-rules`・`NOTICE`・`site/licenses.html` を直す。
 
 ### GitHub

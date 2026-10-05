@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 配信の設定を検査する（Node の標準機能だけを使う）。
 //
-// 1. wrangler.jsonc：静的アセットだけの Worker になっているか
+// 1. wrangler.jsonc：静的アセットだけの Worker になっているか。アクセスの記録を残さない設定か
 //    （main・cache・run_worker_first があると、無料プランでもリクエストが課金の対象になる）
 // 2. site/_headers：Cloudflare の制限（100 ルール・1 行 2,000 文字）に収まり、必要なルールがあるか
 // 3. site/ の .html（demo/ などのサブディレクトリも）：外部の読み込みや、CSP で止められる書き方（インラインのスクリプト・style 属性など）がないか
@@ -108,6 +108,19 @@ function checkWrangler() {
     if (actual !== expected) {
       error(file, `${name} は ${JSON.stringify(expected)} にしてください（今は ${JSON.stringify(actual)}）`);
     }
+  }
+  // アクセスの記録を残さない・送らない（site/privacy.html の 4. に「Workers Logs を無効にし、Logpush なども使わない」と書いている）
+  if (config.observability?.enabled !== false) {
+    error(file, `observability.enabled は false にしてください（Workers Logs を使わない。今は ${JSON.stringify(config.observability?.enabled)}）`);
+  }
+  if (config.observability?.logs?.enabled === true) {
+    error(file, "observability.logs.enabled を true にしないでください（Workers Logs を使わない）");
+  }
+  if (config.logpush === true) {
+    error(file, "logpush を true にしないでください（記録を外部に転送しない）");
+  }
+  if (findKeys(config, ["tail_consumers"]).length > 0) {
+    error(file, "tail_consumers は使わないでください（記録を別の Worker に渡さない）");
   }
   if (typeof config.compatibility_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(config.compatibility_date)) {
     error(file, "compatibility_date（YYYY-MM-DD）がありません");

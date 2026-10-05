@@ -60,7 +60,7 @@ rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy �
 | `.github/workflows/` | `pr.yml`・`publish.yml`・`rollback.yml` |
 | `.github/scripts/` | CI の補助（配信の設定の検査、Node での署名の検証、本番の manifest の取得、版の番号の決定） |
 | `docs/` | [format.md](docs/format.md)（配信形式）、[runbook.md](docs/runbook.md)（運用の手順）、[licensing.md](docs/licensing.md)（ライセンスの判断材料）、[signing.md](docs/signing.md)（署名の鍵） |
-| `LICENSE-rules`・`NOTICE` | ルールのライセンス（CC BY-SA 3.0）と権利表記 |
+| `LICENSE-rules`・`LICENSE`・`NOTICE` | ルールのライセンス（CC BY-SA 3.0）、ツールのコードのライセンス（MIT）、権利表記 |
 
 `build/`・`dist/`・`.tools/`・`.local/`・`deploy/node_modules/` は、作業用なので git に入れません。
 
@@ -167,7 +167,8 @@ swift run -c release rulestool build --help
 ## ライセンス
 
 - ルール（`custom/` と、配信する変換後のリスト）：CC BY-SA 3.0。[LICENSE-rules](LICENSE-rules) と [NOTICE](NOTICE) を参照してください。EasyList（basic）と、Fanboy's Social Blocking List・Fanboy's Notifications List（annoyance）と、EasyPrivacy（privacy。CNAME の節は `.jp` を含む行を除いて外している）を変換して使っています。著作者は、どれも The EasyList authors です。このリポジトリと配信サイトは、Fanboy や EasyList・EasyPrivacy の作者とは関係がありません。
-- ツール（`Sources/`・`Tests/`・`scripts/`・`.github/`・`site/` など）：**ライセンスは未定です。** 決まるまで LICENSE は置いていません。
+- ツールのコード（`Sources/`・`Tests/`・`scripts/`・`tools/`・`.github/`、`Package.swift`、`wrangler.jsonc`・`config/`・`deploy/` の設定ファイル）：MIT License。[LICENSE](LICENSE) を参照してください。
+- それ以外（`site/` のページ・画像・スタイル・スクリプト、`docs/` の文書など）：権利は運営者にあります。
 - 判断材料は [docs/licensing.md](docs/licensing.md) にまとめています。
 
 ## 公開前に埋める値

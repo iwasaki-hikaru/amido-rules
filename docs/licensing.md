@@ -20,8 +20,8 @@
 | 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | **2026-10-04 に 3.0 のままと決定**（運営者が作業者の案を採用。[3.](#3-cc-by-sa-30-と-40)） |
 | 自作ルール（`custom/*.txt`） | CC BY-SA 3.0 | 各ファイルの先頭、`LICENSE-rules` | 同上 |
 | アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList・Fanboy・EasyPrivacy の節がある） | 実装済み（annoyance と privacy は同梱せず、配信元から取得） |
-| ツール（`Sources/`・`Tests/`・`scripts/`・`.github/` など） | 未定 | なし | 決まるまで LICENSE を置かない（[9.](#9-ツールのライセンス)） |
-| サイトのページ（`site/`） | 未定（権利は運営者） | `site/licenses.html` | 表記あり（「権利は、運営者にあります」）。ライセンスは未定（[9.](#9-ツールのライセンス)） |
+| ツールのコード（`Sources/`・`Tests/`・`scripts/`・`tools/`・`.github/`、`Package.swift`、`wrangler.jsonc`・`config/`・`deploy/`） | MIT | `LICENSE`、`NOTICE`、README、`site/licenses.html` | 2026-10-05 に決定（[9.](#9-ツールのライセンス)） |
+| サイトのページ（`site/`）・文書（`docs/`） | 権利は運営者（ライセンスを与えない） | `site/licenses.html`、`NOTICE` | 2026-10-05 に決定（[9.](#9-ツールのライセンス)） |
 | 変換器（SafariConverterLib） | GPLv3 | `site/licenses.html`、`NOTICE` | CI で実行するだけで、配布しない（[5.](#5-変換器safariconverterlib)） |
 
 使っている上流のリストは、次の 4 つです（`sources.yml`）。
@@ -274,10 +274,9 @@ Fanboy's Social Blocking List と Fanboy's Notifications List は、2026-10-01 �
 
 ## 9. ツールのライセンス
 
-- ツール（`Sources/`・`Tests/`・`scripts/`・`.github/`、サイトのページ）のライセンスは未定です。決まるまで LICENSE を置いていません。
-- LICENSE がないあいだは、公開リポジトリで読めても、既定の著作権のもとにあり、他の人が再利用する許可は与えていない状態です。
+- **2026-10-05 に決定（運営者が作業者の案を採用）**：ツールのコード（`Sources/`・`Tests/`・`scripts/`・`tools/`・`.github/`、`Package.swift`、`wrangler.jsonc`・`config/`・`deploy/` の設定ファイル）は MIT License。`LICENSE` に全文を置いた（Copyright (c) 2026 Hikaru Iwasaki）
+- サイトのページ（文章・スタイル・スクリプト・アイコンの画像）と `docs/` の文書には、ライセンスを与えない（権利は運営者。特定商取引法の表記や規約の文章、アプリのアイコンを含むため）
 - ツールは変換器（GPLv3）にリンクしていないので、変換器のライセンスはツールのライセンスの選び方を縛りません。
-- 決めたら、`LICENSE`（ツール用）を置き、README・`NOTICE`・`site/licenses.html` の「未定」を直します。
 
 ---
 
@@ -293,4 +292,4 @@ Fanboy's Social Blocking List と Fanboy's Notifications List は、2026-10-01 �
 | privacy に上流のリストを使うか | EasyPrivacy を使う（2026-10-02 に決定）。CNAME の節は `.jp` を含む行を除いて外す | [2.](#2-easylist) の「EasyPrivacy」 |
 | Fanboy のリストの 2 つのライセンス表示の扱い | CC BY-SA 3.0 で配り、著作者は「The EasyList authors」と表示する（今）。両方の条件を満たすと言えるかは専門家に確認 | [2.](#2-easylist) |
 | 詐欺サイトのデータ | 手で書く（案）／ 許可や契約を得て使う | [8.](#8-詐欺サイトのデータの候補scam第-2-段階) |
-| ツールのライセンス | 未定 | [9.](#9-ツールのライセンス) |
+| ツールのライセンス | MIT（2026-10-05 に決定） | [9.](#9-ツールのライセンス) |

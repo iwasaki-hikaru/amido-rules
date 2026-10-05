@@ -79,8 +79,10 @@ AdGuard SafariConverterLib
 
 このリポジトリのツール
 ----------------------
-ルール以外のファイル（Sources/、Tests/、scripts/、.github/、site/ など）のライセンスは未定です。
-【要記入：決めたら記載】
+ツールのコード（Sources/、Tests/、scripts/、tools/、.github/、Package.swift、wrangler.jsonc、config/・deploy/ の
+設定ファイル）は、MIT License です（LICENSE を参照。Copyright (c) 2026 Hikaru Iwasaki）。
+ルール（custom/ と配信する変換後のリスト）は LICENSE-rules（CC BY-SA 3.0）です。
+それ以外（site/ のページ・画像・スタイル・スクリプト、docs/ の文書など）の権利は、運営者にあります。
 
 
 ----------------------------------------------------------------------
@@ -166,5 +168,10 @@ AdGuard SafariConverterLib (GPLv3, https://github.com/AdguardTeam/SafariConverte
   linked into the tools in this repository and is not distributed with the
   app or the distribution site.
 
-The license of the tools in this repository (everything other than the
-rules) has not been decided yet.
+The tool code in this repository (Sources/, Tests/, scripts/, tools/,
+.github/, Package.swift, and the configuration files wrangler.jsonc, config/
+and deploy/) is licensed under the MIT License (see LICENSE). The rules
+(custom/ and the converted lists) are licensed under LICENSE-rules
+(CC BY-SA 3.0). All other files (the pages, images, styles and scripts in
+site/, the documents in docs/, etc.) are copyrighted by the operator, all
+rights reserved.
