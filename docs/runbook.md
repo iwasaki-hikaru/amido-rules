@@ -253,14 +253,15 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 |---|---|---|
 | 環境を記録する（Xcode 26.6 がありません） | ランナーのイメージが変わって、Xcode 26.6 がなくなった | [actions/runner-images](https://github.com/actions/runner-images) の macOS 26 の README で、入っている Xcode を確かめ、3 つのワークフローの `DEVELOPER_DIR` を直す。変換結果が変わることがあるので、PR で CI を通してから |
 | 変換器を用意する | GitHub から取得できない、タグが動かされた | 一時的なものなら流し直す。「タグのコミットが想定と違います」なら、何が起きたかを確かめるまで止める（[変換器を上げる](#道具の版を上げる)） |
+| 本番の manifest を取得する（build） | 本番に届かない：名前解決できない（カスタムドメイン `amido.goalspace.jp` が Worker `amido` につながっていない・外れた。goalspace.jp の登録の更新が切れた）、HTTP 403 やチャレンジ（goalspace.jp のゾーンの Bot Fight Mode・WAF のルール）、3xx（ゾーンのリダイレクトのルール・ページルール） | 一時的なものなら流し直す。続くなら、管理画面で Worker `amido` の「Domains & Routes」と、goalspace.jp のゾーンの設定（[最初の公開の準備](#最初の公開の準備)の 3.）を確かめる |
 | ルールを作って検査する | 上流を取得できない、件数の変化、予算の超過、根拠のないルール、WebKit でのコンパイルの失敗 | エラーの内容のとおりに直す。件数の変化は[上の手順](#件数の変化で-ci-が止まったとき) |
 | 本番が build のときから変わっていないか確かめる | build と deploy の間に、巻き戻し（「前の版に戻す」）や別の公開で本番が変わった | 巻き戻したばかりなら、main を直してから公開する（そのまま流し直すと、巻き戻す前と同じ内容を公開し直してしまう）。意図しない変化なら、本番の版を確かめてから「Re-run all jobs」 |
 | iOS 18.6 の WebKit でコンパイル | macOS では通るが、iOS 18 の WebKit では読めない書き方のルールがある（`WKErrorDomain 6`） | ログの「Error while parsing …」のルールを探し、自作のルールなら直す。上流のリストのルールなら、そのルールを除く方法を決める（除き方は根拠とともに記録する）。ランナーに iOS 18.6 やXcode 16.4 がなくなったときは、`DEVELOPER_DIR` と版を、`actions/runner-images` の macOS 15 の README に合わせて直す |
-| 本番と比べる | 本番に届かない | 流し直す |
+| 本番と比べる | 本番に届かない | 流し直す。続くなら、上の「本番の manifest を取得する」と同じ |
 | 署名する | `RULES_SIGNING_KEY` が未登録、または鍵が `keys/trusted-public-keys.json` にない | [signing.md](signing.md) |
 | 検証する（Node の crypto） | 署名や manifest の形がおかしい | rulestool と Node で結果が違うなら、原因がわかるまで公開しない |
 | 版の名前を確保する | 同じ版のタグがすでにある | 「Re-run all jobs」で build ジョブからやり直す（版を決め直す） |
-| Cloudflare に公開する | API トークンの期限切れ・権限不足、workers.dev のサブドメインがない | トークンを作り直して `CLOUDFLARE_API_TOKEN` を更新する（Account → Workers Scripts → Edit だけ） |
+| Cloudflare に公開する | API トークンの期限切れ・無効化、トークンの範囲に Worker `amido` が入っていない、`CLOUDFLARE_ACCOUNT_ID` が goalspace と同じアカウントのものでない、Worker `amido` がない（消した、または `wrangler.jsonc` の `name` を変えた。絞ったトークンでは Worker を作れない） | トークンを作り直して `CLOUDFLARE_API_TOKEN` を更新する（アカウントのトークンで、範囲は「Specified Workers」の `amido`、役割は「Editor」。[最初の公開の準備](#最初の公開の準備)の 19.）。Worker がないときは、`name` を `amido` に戻し、運営者が `scripts/first-deploy.sh` で作り直して、ドメインをつなぎ直し、トークンの範囲も選び直す（16.〜19.） |
 | 本番を検証する | 反映の遅れ、公開したものが壊れていた | 自動で前の版に戻しています（「検証に失敗したら、前の版に戻す」のステップ）。本番が前の版で正しく検証できるかを確かめ、原因を調べる |
 | GitHub Release に保管する | 権限、一時的な失敗 | 公開は済んでいる。手で Release を作るか、次の公開を待つ |
 
@@ -288,7 +289,7 @@ rulestool は、カテゴリごとの件数を本番の manifest と比べ、**�
 
 ### 方法 2：特定の版に戻す
 
-1. 戻す先の Worker の版の ID を調べる：Cloudflare の管理画面 →「Workers & Pages」→ この Worker →「Deployments」。公開のメッセージに `rules <版>` と書いてあるので、ルールの版と対応がわかります。
+1. 戻す先の Worker の版の ID を調べる：Cloudflare の管理画面（goalspace と同じアカウント）→「Workers & Pages」→ Worker `amido` →「Deployments」。公開のメッセージに `rules <版>` と書いてあるので、ルールの版と対応がわかります。
 2. 「前の版に戻す」を、`version_id` にその ID を入れて実行する。
 
 Cloudflare で戻せるのは、直近の 100 版までです。
@@ -301,16 +302,16 @@ Cloudflare で戻せるのは、直近の 100 版までです。
 
 ### 手元から戻す（GitHub Actions が使えないとき）
 
-Cloudflare の管理画面の「Deployments」→ 戻したい版の「⋯」→「Rollback」でも戻せます。wrangler を使うなら：
+Cloudflare の管理画面（Worker `amido`）の「Deployments」→ 戻したい版の「⋯」→「Rollback」でも戻せます。wrangler を使うなら：
 
 ```bash
 cd deploy
 npm ci
-export CLOUDFLARE_API_TOKEN=…  # 手元用のトークン（Workers Scripts → Edit）。使い終わったら無効にする
-export CLOUDFLARE_ACCOUNT_ID=…
+export CLOUDFLARE_API_TOKEN=…  # 手元用のトークン（CI のものとは別に作る。アカウントのトークンで、範囲は「Specified Workers」の amido、役割は「Editor」、期限は短く）。使い終わったら無効にする
+export CLOUDFLARE_ACCOUNT_ID=…  # goalspace と同じアカウントの ID
 npx wrangler rollback [<版の ID>] --config ../wrangler.jsonc --message "理由"
 cd ..
-swift run -c release rulestool verify --base-url https://<配信ホスト>/
+swift run -c release rulestool verify --base-url https://amido.goalspace.jp/
 ```
 
 ---
@@ -340,23 +341,35 @@ swift run -c release rulestool verify --base-url https://<配信ホスト>/
 
 ### Cloudflare
 
-1. アカウントを作る。
-2. 管理画面の「Workers & Pages」で、workers.dev のサブドメインを一度作る（作らないと、CI からデプロイできない）。
-3. Worker の名前を決める（英小文字・数字・ハイフン、63 文字まで、先頭と末尾はハイフン以外）。**サブドメインと名前は、アプリの公開後に変えられません**（README の「workers.dev を使うことのリスク」）。
-4. API トークンを作る：**アカウントの API トークン**（ユーザーに結びつかず、CI に向く。Cloudflare の資料「Account API tokens」）にする。「Manage account」→「Account API tokens」→「Create Token」→ 権限は **Account → Workers Scripts → Edit** だけ。アカウント ID も控える（「Workers & Pages」の右側の「Account details」）。
-   - 「User Details」「Memberships」などの読み取り権限は付けない（付けると、認証に失敗したときの wrangler の出力に、アカウントのメールが出ることがある。このリポジトリの Actions のログは誰でも読める）。
-   - 有効期限（TTL）を付け、期限の前に作り直す。手元で使うトークンは別に作り、使い終わったら無効にする。
-   - できれば、このアプリ専用の Cloudflare アカウントにする（Workers Scripts の権限は、アカウントの中のすべての Worker に効くため）。アカウントの 2 段階認証は、セキュリティキーかパスキーにする。アカウント名にメールアドレスが入っていたら、入らない名前に変える。
-5. この Worker で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。プライバシーポリシーの 4. と、App Privacy の答え（ルールの取得の IP アドレスなどは、集めるデータに含めない。2026-10-04 に決めた答えは ios リポジトリの `docs/appstore/app-privacy.md`）の前提なので、公開のあとも設定を変えない。`check-config.mjs` が、記録を有効にする設定を失敗にする。
+配信は、goalspace と同じ Cloudflare アカウントの Worker `amido` で、カスタムドメイン `amido.goalspace.jp` から行います（2026-10-07 に決定。理由とリスクは README の「独自ドメインと共有アカウント」）。前は、amido 専用のアカウントと `www.amido.workers.dev`（Worker 名 `www`）にしていました（2026-10-01 に決定。2026-10-07 に amido.goalspace.jp に変えた）。
+
+1. アカウント：goalspace と同じアカウントを使う（このためだけに新しく作らない）。アカウント ID を控える（「Workers & Pages」の右側の「Account details」）。
+2. **アカウントを守る**：同じアカウントの管理者は、Worker `amido` と、ドメインのつなぎ先も変えられます（[signing.md の「漏れたときの影響の範囲」](signing.md#漏れたときの影響の範囲)）。
+   - アカウントの 2 段階認証は、セキュリティキーかパスキーにする。
+   - アカウントのメンバーに、要らない人や古い招待が残っていないかを確かめる。
+   - アカウント名にメールアドレスが入っていたら、入らない名前に変える。
+3. **goalspace.jp のゾーンの設定を確かめる**（公開の前に。ゾーンの設定を変えるときも）。ゾーンの設定は、amido.goalspace.jp のサイトとアプリの取得にも効きます。プライバシーポリシーの「Cookie・解析ツールを使わない」（9.）「記録を残さない」（4.）と合わせ、アプリと CI の取得が止まらないようにします。
+   - Bot Fight Mode：オフにする。オンだと、アプリの取得（URLSession）や CI の `curl` が止められたり、Cookie が付いたりするおそれがある。
+   - Web Analytics の自動の設定（ページにスクリプトを差し込むもの）：amido.goalspace.jp では使わない。
+   - HTML を書き換える機能（メールアドレスの難読化（Email Address Obfuscation）・Rocket Loader など）：Configuration Rules で amido.goalspace.jp だけ無効にするか、ゾーンで無効にする。
+   - リダイレクトのルール・ページルール・goalspace の Worker のルート（`*.goalspace.jp/*` など）：amido.goalspace.jp に当たらないこと。当たると、ページやルールが正しく届かない（CI の取得は、リダイレクトを失敗にする）。
+   - WAF のルール（マネージドルール・カスタムルール・レート制限など）：ルールに当たった通信は、Security Events に IP アドレスなどが残る。amido.goalspace.jp の通信に当たるルールがないかを確かめる（あれば、プライバシーポリシーの 4. と食い違わないかを確かめる）。
+4. Worker 名と配信ホスト：Worker 名は `amido`（`wrangler.jsonc` の `name`）、配信ホストは `amido.goalspace.jp`（`config/distribution.json` の `host`）。**どちらも、アプリの公開後は変えられません**（README の「独自ドメインと共有アカウント」）。
+   - workers.dev とプレビュー URL は使わない（`wrangler.jsonc` の `workers_dev` と `preview_urls` は `false`）。
+   - ドメインは管理画面で Worker につなぐ（17.）。`wrangler.jsonc` に `route`・`routes` を書かない（CI のトークンにゾーンの権限がないため。`check-config.mjs` が確かめる）。DNS のレコードは先に作らない（つなぐときに Cloudflare が作る）。
+5. **誤って作った Worker「amido」を消す**：Cloudflare の GitHub 連携（Workers Builds）で作られ、`dist` がなくてビルドに失敗した Worker です。管理画面の「Workers & Pages」→ `amido` →「Settings」で削除する。このリポジトリは Workers Builds を使いません（公開は `publish.yml` だけ）。
+   - GitHub のアカウントの「Settings」→「Applications」→「Cloudflare Workers and Pages」→「Configure」で、対象のリポジトリから `amido-rules` だけを外す。goalspace が使っているかもしれないので、アンインストールはしない。
 
 ### このリポジトリの値
 
-ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・配信ホスト（`config/distribution.json` と `wrangler.jsonc` の `name`）・rules リポジトリの URL・フォームの URL を、両方のリポジトリにまとめて書き込めます（`--apply` を付けるまでは表示だけ）。手で書き換える場合は次のとおり。
+ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・配信ホスト（`--host`。`config/distribution.json` の `host` と、`wrangler.jsonc` の `workers_dev`）・Worker 名（`--worker-name`。`wrangler.jsonc` の `name`）・rules リポジトリの URL・フォームの URL を、両方のリポジトリにまとめて書き込めます（`--apply` を付けるまでは表示だけ。例：`--host amido.goalspace.jp --worker-name amido`）。手で書き換える場合は次のとおり。
 
-6. 配信ホストを 3 か所で同じにする（英小文字で）：
-   - `config/distribution.json` の `host`（`<Worker 名>.<サブドメイン>.workers.dev`）
-   - `wrangler.jsonc` の `name`（`<Worker 名>`）
-   - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`
+6. 配信ホストを 2 か所で同じにし、`wrangler.jsonc` を合わせる（英小文字で）：
+   - `config/distribution.json` の `host`（`amido.goalspace.jp`）
+   - アプリの `ios/App/Config/AppConfig.swift` の `distributionHost`（`amido.goalspace.jp`）
+   - `wrangler.jsonc`：`name` は Worker 名（`amido`）、`workers_dev` と `preview_urls` は `false`、`route`・`routes` は書かない
+   - `/check` 用のルール（`amido.goalspace.jp##.cb-check-basic` など）は、`host` から自動で作られる。
+   - 2026-10-07 に、`www.amido.workers.dev`（`name` は `www`）から変えた。
 7. 署名の鍵を作って登録する：`scripts/keygen.sh <リポジトリの外のディレクトリ>`（[signing.md](signing.md)）。`keys/trusted-public-keys.json` とアプリの公開鍵を同じにする。
 8. `site/` の「【要記入：…】」をすべて埋め、「【要確認：…】」を確かめて消す。特定商取引法に基づく表記は `site/tokushoho.html`（2026-10-05 に載せた。価格を変えたら直す）。残りの数は `node .github/scripts/check-config.mjs` が表示します
 9. ライセンスの判断（[licensing.md](licensing.md)）を済ませ、決めたものに合わせて `LICENSE-rules`・`NOTICE`・`site/licenses.html` を直す。
@@ -370,7 +383,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
     - 「Settings」→「Emails」で「Keep my email addresses private」と「Block command line pushes that expose my email」をオンにする。
 12. 「Settings」→「Environments」→ `production` を、**Secret を登録する前に**作る（存在しない environment をワークフローが使うと、保護なしで自動で作られるため）。
     - 「Deployment branches and tags」を「Selected branches and tags」にして、`main` だけにする。
-    - 「Environment secrets」に `RULES_SIGNING_KEY`・`CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を登録する。
+    - 「Environment secrets」に `RULES_SIGNING_KEY`・`CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を登録する。Cloudflare の 2 つは、Worker `amido` とトークンを作ってから登録する（19.）。
     - 「Required reviewers」に自分を入れ、「Allow administrators to bypass configured protection rules」をオフにすることをすすめます（公開リポジトリなら無料のプランでも使える）。main に書き込めるトークンが盗まれても、`Sources/`・`deploy/package-lock.json`・`.github/scripts/` を書き換えれば、秘密鍵やトークンを持ち出せてしまいます。承認があれば、その前に止められます。代わりに、公開のたび（週 1 回の定期実行も）承認が要ります。1 人で運用するので「Prevent self-review」はオンにしない。
 13. 「Settings」→「Actions」→「General」：
     - 「Actions permissions」を「Allow <owner>, and select non-<owner>, actions and reusable workflows」にして、「Allow actions created by GitHub」だけをオンにする。「Require actions to be pinned to a full-length commit SHA」をオンにする。
@@ -381,16 +394,36 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
 
 ### 初回の公開
 
-16. 上の変更を main にマージすると、`publish.yml` が動きます（本番に manifest がないので、件数は比べません）。
-17. 成功したら、次を確かめる：
+Worker は、最初の 1 回だけ、運営者が手元から作ります。CI のトークンは Worker `amido` だけに絞るので、Worker を作れません。また、CI は公開の前に本番の manifest を取りに行き、名前解決できないと止まります。そのため、手元で Worker を作ってドメインをつないでから、CI の公開を承認します。2 回目からは CI だけが公開します。5. で誤って作った Worker を消してから行います。
+
+16. 手元で `scripts/first-deploy.sh` を実行する（運営者。Node.js 22 以上が要る）。`check-config.mjs` を通し、`site/` だけを `dist/` にして、`deploy/` の版を固定した wrangler で Worker `amido` に公開します。はじめに goalspace と同じアカウントの ID（管理画面の URL の `dash.cloudflare.com/<ID>/…`）を聞かれ、公開先をそのアカウントに固定する（環境変数の Cloudflare のトークンは使わない）。wrangler にログインしていなければブラウザでログインを求め、`wrangler whoami` の一覧にそのアカウントがあることを確かめてから公開する。CI と同じく、運営者向けの HTML のコメントと `.DS_Store` は除く。`v1/` を含めないので、本番の `/v1/manifest.json` は 404 のまま（CI は「まだ公開していない」と扱う）。最後に wrangler のログインを消すかを聞かれる（goalspace の Worker やゾーンにも届く広い権限なので、ほかの作業で使っていなければ消す）。本番で動いている Worker には使わない（`v1/` が消える）。
+17. 管理画面の「Workers & Pages」→ `amido` →「Settings」→「Domains & Routes」→「Add」→「Custom domain」で、`amido.goalspace.jp` をつなぐ。数分待って、次を確かめる：
     ```bash
-    swift run -c release rulestool verify --base-url https://<配信ホスト>/
-    for page in / /privacy /terms /support /licenses /check /tokushoho /demo/news /demo/recipe /demo/social; do
-      curl -s -o /dev/null -w "%{http_code} $page\n" "https://<配信ホスト>$page"
-    done
-    curl -sI https://<配信ホスト>/v1/manifest.json.sig | grep -i 'content-type\|cache-control'
+    curl -s -o /dev/null -w "%{http_code}\n" https://amido.goalspace.jp/privacy           # 200（ページが開く）
+    curl -s -o /dev/null -w "%{http_code}\n" https://amido.goalspace.jp/v1/manifest.json  # 404（まだ公開していない）
+    curl -sI https://amido.goalspace.jp/privacy | grep -i 'set-cookie'                    # 何も出ない（Cookie が付かない。3.）
+    curl -s https://amido.goalspace.jp/support | grep -i -E 'cdn-cgi|cloudflareinsights'  # 何も出ない（HTML の書き換えやスクリプトの差し込みがない。3.）
     ```
-18. App Store Connect に、プライバシーポリシーの URL（`https://<配信ホスト>/privacy`）とサポートの URL（`https://<配信ホスト>/support`）を登録する。
+18. Worker `amido` で、アクセスの記録（Workers Logs・Logpush・Tail など）が無効になっていることを確かめる（プライバシーポリシーの記載と合わせる。`wrangler.jsonc` でも `observability` を無効にしている）。新しく作った Worker は、既定で記録が有効になる（Cloudflare のドキュメント、2026-08-11 更新）。プライバシーポリシーの 4. と、App Privacy の答え（ルールの取得の IP アドレスなどは、集めるデータに含めない。2026-10-04 に決めた答えは ios リポジトリの `docs/appstore/app-privacy.md`）の前提なので、公開のあとも設定を変えない。`check-config.mjs` が、記録を有効にする設定を失敗にする。
+19. CI のトークンを作り、GitHub に登録する：
+    - 「Manage Account」→「Account API Tokens」→「Create Token」。**アカウントが持つトークン**にする（ユーザーに結びつかず、CI に向く）。
+    - 範囲は「Specified Workers」で `amido` だけ、役割は「Editor」にする（2026-09-15 から使える。[Cloudflare の changelog](https://developers.cloudflare.com/changelog/post/2026-09-15-granular-worker-permissions/)、[Workers の権限](https://developers.cloudflare.com/workers/authorization/workers/)）。ゾーンの権限は付けない。これで、同じアカウントの goalspace の Worker やゾーンには触れられない。この範囲では Worker を作れないので、16. が先に要る。
+    - 「User Details」「Memberships」などの読み取り権限は付けない（付けると、認証に失敗したときの wrangler の出力に、アカウントのメールが出ることがある。このリポジトリの Actions のログは誰でも読める）。
+    - 有効期限（TTL）を付け、期限の前に作り直す。手元で使うトークンは別に（同じ範囲で）作り、使い終わったら無効にする。
+    - GitHub の「Settings」→「Environments」→ `production` の「Environment secrets」に、`CLOUDFLARE_API_TOKEN`（このトークン）と `CLOUDFLARE_ACCOUNT_ID`（goalspace と同じアカウントの ID。1.）を登録する。`RULES_SIGNING_KEY` がまだなら、同じ所に登録する（[signing.md](signing.md)）。
+    - 前の amido 専用のアカウントのトークン（2026-10-01 に作ったもの）は無効にする。専用のアカウントは、使っていないことを確かめてから消してよい。
+20. 古いホスト（`www.amido.workers.dev`）向けに承認を待っている「ルールの公開」の実行（run 37284268598）は「Reject」する。
+21. ホストの変更（`config/distribution.json`・`wrangler.jsonc` など。2026-10-07 の変更は作業者が push する）を main に push すると、新しい「ルールの公開」の実行が、変換と検査のあとで承認を待つので、承認する（本番に manifest がないので、件数は比べません）。push は 17. のあとにする（ドメインがつながる前だと、build ジョブの「本番の manifest を取得する」が名前解決できずに止まる）。
+22. 成功したら、本番を確かめる：
+    ```bash
+    swift run -c release rulestool verify --base-url https://amido.goalspace.jp/
+    for page in / /privacy /terms /support /licenses /check /tokushoho /demo/news /demo/recipe /demo/social; do
+      curl -s -o /dev/null -w "%{http_code} $page\n" "https://amido.goalspace.jp$page"
+    done
+    curl -sI https://amido.goalspace.jp/v1/manifest.json.sig | grep -i 'content-type\|cache-control'
+    ```
+    確かめたら、ios リポジトリの `scripts/update-bundled-rules.sh` で、アプリに同梱するリストを本番の版に入れ替える。
+23. App Store Connect に、プライバシーポリシーの URL（`https://amido.goalspace.jp/privacy`）とサポートの URL（`https://amido.goalspace.jp/support`）を登録する。
 
 ---
 

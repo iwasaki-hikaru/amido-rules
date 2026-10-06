@@ -5,13 +5,17 @@
 //   キャッシュの設定（cache）は入れない。入れると、すべてのリクエストが Worker の実行として数えられ、
 //   1 日 10 万リクエストを超えると Error 1027 で失敗する。
 // - 1 ファイルは 25 MiB まで、1 つの版につき 2 万ファイルまで。_headers は 100 ルールまで。
-// - name は config/distribution.json の host の先頭（<name>.<サブドメイン>.workers.dev）と同じにする。
-//   host はアプリに埋め込むので、公開したあとは name もサブドメインも変えない。
+// - 配信ホストは config/distribution.json の host（カスタムドメイン amido.goalspace.jp。2026-10-07 に決定）。
+//   ドメインは Cloudflare の管理画面で、この Worker につなぐ（Settings → Domains & Routes → Custom domain）。
+//   ここに route・routes を書かない：CI のトークンはこの Worker だけに絞っていてゾーンの権限がなく、
+//   書くと wrangler がデプロイのたびにドメインの API を呼ぶ（CI では確認なしに、ほかの Worker のドメインでも付け替える）。
+// - name は、アカウントの中のこの Worker の名前（goalspace の Worker と同じアカウント）。
+//   host はアプリに埋め込むので、公開したあとは host も name も変えない（name を変えると別の Worker ができる）。
 {
-  "name": "www",
+  "name": "amido",
   "compatibility_date": "2026-09-01",
-  // workers.dev で公開する。版ごとのプレビュー URL は出さない（公開前の版が見えないように）
-  "workers_dev": true,
+  // カスタムドメインだけで公開し、workers.dev では出さない。版ごとのプレビュー URL も出さない（公開前の版が見えないように）
+  "workers_dev": false,
   "preview_urls": false,
   // アクセスの記録（Workers Logs）は使わない。プライバシーポリシーの記載と合わせている
   "observability": {

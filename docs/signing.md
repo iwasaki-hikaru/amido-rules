@@ -122,9 +122,9 @@ swift run -c release rulestool keygen --out ~/rules-signing-keys/rules-signing-<
    - CI が漏れの原因かもしれないときは、`CLOUDFLARE_API_TOKEN` も作り直す。
 
 **Cloudflare のトークンやアカウントが漏れた疑いがあるとき**は、1. より先に次を行います。
-- トークンを無効にする（「My Profile」→「API Tokens」）。
+- トークンを無効にする（アカウントのトークンなので、「Manage Account」→「Account API Tokens」）。
 - `wrangler rollback`（前の版に戻す）は使わない。攻撃者が置いた版に戻ってしまうことがあります。代わりに、GitHub Release の一式から公開し直す（`rollback.yml` を `release_tag` を指定して実行。[runbook の方法 3](runbook.md#方法-3github-release-から公開し直す100-版より前または-cloudflare-の記録で戻せないとき)）。
-- Worker にスクリプト（`main`）や、Workers Logs・Logpush・Tail が足されていないかを確かめる。このリポジトリの設定は静的なファイルだけで、記録も無効にしています。
+- Worker `amido` にスクリプト（`main`）や、Workers Logs・Logpush・Tail が足されていないかを確かめる。このリポジトリの設定は静的なファイルだけで、記録も無効にしています。アカウントが漏れた疑いがあるときは、Worker `amido` の「Domains & Routes」と、goalspace.jp の DNS のレコードも変えられていないかを確かめる（アカウントは goalspace と同じ）。
 
 ### そのあとに行うこと
 
@@ -133,10 +133,10 @@ swift run -c release rulestool keygen --out ~/rules-signing-keys/rules-signing-<
 
 ### 漏れたときの影響の範囲
 
-- 署名だけでは、偽の manifest を利用者に届けられません。アプリは、埋め込んだ配信ホストから HTTPS でだけ取得するので、偽物を届けるには、配信（Cloudflare のアカウントや API トークン）も乗っ取る必要があります。
+- 署名だけでは、偽の manifest を利用者に届けられません。アプリは、埋め込んだ配信ホストから HTTPS でだけ取得するので、偽物を届けるには、配信（Cloudflare のアカウントや API トークン、または配信ホスト amido.goalspace.jp のドメインや DNS）も乗っ取る必要があります。
 - 偽の manifest が届いた場合でも、コンテンツブロッカーのルールでできるのは、読み込みを止める、要素を隠す、ルールを打ち消すといったことで、ページの中身を読んだり送ったりはできません。起こりうるのは「サイトが表示されなくなる」「ブロックが効かなくなる」といった影響です。
 - アプリは「版が今と違えば」受け入れます（巻き戻しのため）。そのため、配信を乗っ取った人は、鍵がなくても、過去に正しく署名された版（GitHub Release に残っている）を配り直せます。
-- 配信（Cloudflare）を乗っ取られると、署名とは関係なく、サイトのページ（`/privacy` など）を偽物にしたり、Worker のスクリプトで利用者の IP アドレスなどを記録したりできます。Cloudflare のアカウントとトークンは、署名の鍵と同じくらい大事に守ります（runbook の「最初の公開の準備」の Cloudflare 4.）。
+- 配信（Cloudflare）を乗っ取られると、署名とは関係なく、サイトのページ（`/privacy` など）を偽物にしたり、Worker のスクリプトで利用者の IP アドレスなどを記録したりできます。Cloudflare のアカウント（goalspace と同じ）とトークン、goalspace.jp のドメインは、署名の鍵と同じくらい大事に守ります（runbook の「最初の公開の準備」の 2. と 19.、README の「独自ドメインと共有アカウント」）。
 
 ### 2 本とも漏れた・失ったとき
 

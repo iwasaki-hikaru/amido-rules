@@ -9,7 +9,7 @@ sources.yml（上流のリスト）＋ custom/（自作ルール）
   → rulestool build   取得 → カテゴリごとにまとめる → 変換（SafariConverterLib）→ 検査 → WebKit でコンパイル
   → rulestool sign    manifest.json に Ed25519 で署名（CI の production environment の中だけ）
   → rulestool site    site/ のページと v1/ をまとめて dist/ にする
-  → wrangler deploy   Cloudflare Workers（workers.dev、静的アセットだけ）に公開
+  → wrangler deploy   Cloudflare Workers の Worker amido（静的アセットだけ）に公開 → https://amido.goalspace.jp/
   → アプリ            manifest の署名を検証 → 各リストの SHA-256 を検証 → 拡張ごとに組み立てて Safari に渡す
 ```
 
@@ -50,13 +50,13 @@ rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy �
 | `custom/` | 自作ルール。各ルールのすぐ上に `! 根拠: <URL> (YYYY-MM-DD)` が必要 |
 | `config/budgets.json` | 拡張ごとの件数・バイト数の予算と、件数の急な変化の検査のしきい値 |
 | `config/denylist.json` | ライセンス上使えないリスト（URL に含む文字列。280blocker など） |
-| `config/distribution.json` | 配信ホスト（アプリに埋め込むもの）と `min_app_build` |
+| `config/distribution.json` | 配信ホスト（アプリに埋め込むもの。`amido.goalspace.jp`）と `min_app_build` |
 | `keys/trusted-public-keys.json` | 署名の公開鍵（アプリに埋め込むものと同じにする） |
 | `Package.swift`・`Sources/`・`Tests/` | rulestool とそのテスト |
 | `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認・特定商取引法に基づく表記）、`demo/` の見本のページ（ニュース・レシピ・SNS）と `_headers` |
-| `wrangler.jsonc` | Cloudflare Workers の設定（静的アセットだけ） |
+| `wrangler.jsonc` | Cloudflare Workers の設定（Worker 名 `amido`、静的アセットだけ。workers.dev とプレビュー URL は使わず、カスタムドメインは管理画面でつなぐ） |
 | `deploy/` | wrangler の版の固定（`package.json` と `package-lock.json`。CI では `npm ci`） |
-| `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成） |
+| `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成）、`first-deploy.sh`（最初の 1 回だけ、運営者の手元から Worker を作り、サイトのページだけを公開する） |
 | `.github/workflows/` | `pr.yml`・`publish.yml`・`rollback.yml` |
 | `.github/scripts/` | CI の補助（配信の設定の検査、Node での署名の検証、本番の manifest の取得、版の番号の決定） |
 | `docs/` | [format.md](docs/format.md)（配信形式）、[runbook.md](docs/runbook.md)（運用の手順）、[licensing.md](docs/licensing.md)（ライセンスの判断材料）、[signing.md](docs/signing.md)（署名の鍵） |
@@ -139,7 +139,9 @@ swift run -c release rulestool build --help
 - アクションは GitHub 公式のもの（checkout・cache・upload-artifact・download-artifact）だけを、コミットの SHA で固定しています。
 - `pull_request_target` は使いません。
 - ランナーは `macos-26`、Xcode は `DEVELOPER_DIR` で 26.6 を明示して選びます。
-- 秘密情報は `production` environment にだけ置きます：`RULES_SIGNING_KEY`（署名の秘密鍵、[docs/signing.md](docs/signing.md)）、`CLOUDFLARE_API_TOKEN`（Account → Workers Scripts → Edit だけのトークン）、`CLOUDFLARE_ACCOUNT_ID`。
+- 秘密情報は `production` environment にだけ置きます：`RULES_SIGNING_KEY`（署名の秘密鍵、[docs/signing.md](docs/signing.md)）、`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（goalspace と同じアカウントの ID）。
+  - `CLOUDFLARE_API_TOKEN` は、アカウントが持つトークン（Account API token）で、範囲を「Specified Workers」の `amido` だけ、役割を「Editor」にしたものです。ゾーンの権限は付けず、有効期限を付けます（[docs/runbook.md](docs/runbook.md#最初の公開の準備)）。同じアカウントにある goalspace の Worker やゾーン（DNS など）には触れられません。
+  - この範囲のトークンでは Worker を新しく作れません。最初の 1 回だけ、運営者が手元から `scripts/first-deploy.sh` で作ります。
 - 配信ホストが仮の値（`PLACEHOLDER`）のあいだは、build ジョブだけが動き、公開はしません。
 - 本番と比べて件数が大きく変わると（30% 超かつ 100 件超）、PR の検査も公開も止まります。意図した変化なら、PR にはラベル `allow-count-change` を付け、公開は手動の実行で `allow_count_change` を指定します（[docs/runbook.md](docs/runbook.md#件数の変化で-ci-が止まったとき)）。
 
@@ -157,12 +159,21 @@ swift run -c release rulestool build --help
 - Cloudflare Workers の静的アセットだけを使います。`wrangler.jsonc` に `main`・`cache`・`run_worker_first` を入れると、無料プランでもリクエストが Worker の実行として数えられるので、入れません（CI で検査しています）。
 - 公開のたびに、本番の manifest が指している前の版のリストも一緒に置きます。更新の途中の利用者が 404 にならないようにするためです。
 
-### workers.dev を使うことのリスク
+### 独自ドメインと共有アカウント
 
-- 配信元は `<Worker 名>.<アカウントのサブドメイン>.workers.dev` です。Cloudflare は、workers.dev のサブドメインを「無料のウェブサイトとして扱い、個人や趣味のプロジェクト向け」と説明しています（業務上重要な用途向けではない。[Cloudflare のドキュメント](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)）。禁止はされていないので、リスクを記録したうえで使っています。
-- **配信ホストはアプリに埋め込むので、アプリを公開したあとは変えられません。** Worker の名前やアカウントのサブドメインを変えたとき、古い URL がどうなるか（転送されるか）は、Cloudflare のドキュメントに書かれていません。変えると、配布済みのアプリがルールを更新できなくなる前提で扱います。
-- そのため、Worker の名前とサブドメインは、アプリの公開前に確定します（`config/distribution.json` の `host`、`wrangler.jsonc` の `name`、アプリの `AppConfig.distributionHost` の 3 か所を同じにする）。
-- CI から初めてデプロイする前に、Cloudflare の管理画面で workers.dev のサブドメインを一度作っておく必要があります。
+- 配信元は `https://amido.goalspace.jp/` です（カスタムドメイン）。Cloudflare のアカウントは goalspace と同じもので、その中の Worker `amido` で配信します（2026-10-07 に決定）。
+  - 前は、amido 専用の Cloudflare アカウントと `www.amido.workers.dev`（Worker 名 `www`）にしていました（2026-10-01 に決定。2026-10-07 に amido.goalspace.jp に変えた。アプリをまだ公開していなかったので変えられた）。
+- 独自ドメインにした理由：
+  - Cloudflare は、本番には workers.dev ではなく独自ドメインを使うことをすすめています（[Cloudflare のドキュメント](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)）。
+  - workers.dev のサブドメインはアカウントに 1 つで、同じアカウントの goalspace と共有になります。workers.dev のままだと、goalspace の都合でサブドメインを変えたときに、あみどの配信ホストも変わって壊れます。
+  - 問い合わせ先（amido@goalspace.jp）と同じドメインになります。
+- 共有のアカウントにした理由：このためだけに別のアカウントを作るのはもったいないため（運営者）。代わりに、CI のトークンを Worker `amido` だけに絞り、goalspace の Worker やゾーンには触れられないようにしています（上の「CI」）。
+- **配信ホストはアプリに埋め込むので、アプリを公開したあとは変えられません。** 変えると、配布済みのアプリがルールを更新できなくなる前提で扱います。`config/distribution.json` の `host` と、アプリの `AppConfig.distributionHost` を同じにします。`wrangler.jsonc` の `name`（`amido`）も変えません（変えると、ドメインがつながっていない別の Worker ができる）。
+- ドメインは、Cloudflare の管理画面で Worker `amido` につなぎます（Settings → Domains & Routes → Add → Custom domain）。DNS のレコードは先に作らず、Cloudflare に作らせます。`wrangler.jsonc` には `route`・`routes` を書かず、`workers_dev` と `preview_urls` は `false` にします（CI のトークンにゾーンの権限がないため。`check-config.mjs` で検査しています）。
+- CI は、公開の前に本番の manifest を取りに行き、名前解決できないと止まります。そのため、最初の 1 回は、運営者が手元から `scripts/first-deploy.sh` で Worker を作り（サイトのページだけ。`/v1/manifest.json` はまだ 404）、ドメインをつないでから、CI の公開を承認します（[docs/runbook.md の「最初の公開の準備」](docs/runbook.md#最初の公開の準備)）。
+- **goalspace.jp の登録の更新が切れると、アプリはルールを更新できなくなります**（今のルールのまま動き続ける）。ほかの人がそのドメインを取ると、サイトのページを置き換えたり、過去に正しく署名された版（GitHub Release にある）を配り直したりできます（[docs/signing.md](docs/signing.md#漏れたときの影響の範囲)）。goalspace.jp の更新を切らさないようにします。
+- goalspace.jp のゾーンの設定は、amido.goalspace.jp のサイトとアプリの取得にも効きます。Bot Fight Mode、Web Analytics の自動の設定、HTML を書き換える機能（メールアドレスの難読化・Rocket Loader など）、リダイレクトのルール・ページルール・goalspace の Worker のルート、WAF のルールで、プライバシーポリシーの「Cookie・解析ツールを使わない」「記録を残さない」と食い違ったり、アプリや CI の取得が止まったりすることがあります。公開の前と、ゾーンの設定を変えるときに確かめます（[docs/runbook.md](docs/runbook.md#最初の公開の準備) の手順 3）。
+- 同じアカウントの管理者は、Worker `amido` とドメインのつなぎ先も変えられます。アカウントのメンバーと 2 段階認証は、署名の鍵と同じくらい大事に守ります（[docs/runbook.md](docs/runbook.md#最初の公開の準備) の手順 2）。
 
 ## ライセンス
 

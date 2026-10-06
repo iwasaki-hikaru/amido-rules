@@ -98,7 +98,6 @@ function checkWrangler() {
     error(file, `静的アセットだけにするため、次のキーは使えません：${forbidden.join(", ")}`);
   }
   const expect = [
-    ["workers_dev", config.workers_dev, true],
     ["preview_urls", config.preview_urls, false],
     ["assets.directory", config.assets?.directory, "./dist"],
     ["assets.html_handling", config.assets?.html_handling, "auto-trailing-slash"],
@@ -126,7 +125,11 @@ function checkWrangler() {
     error(file, "compatibility_date（YYYY-MM-DD）がありません");
   }
 
-  // name は、配信ホスト（<name>.<サブドメイン>.workers.dev）の先頭と同じでなければならない
+  // 配信ホスト（config/distribution.json の host）の形で、合わせるものが変わる
+  // - <name>.<サブドメイン>.workers.dev：workers_dev を true にし、name を host の先頭と同じにする
+  // - それ以外（カスタムドメイン。例 amido.goalspace.jp）：workers_dev を false にし、route・routes を書かない。
+  //   ドメインは Cloudflare の管理画面で Worker につなぐ。CI のトークンはこの Worker だけに絞っていてゾーンの権限がなく、
+  //   設定に custom_domain を書くと、wrangler がデプロイのたびにドメインの API を呼ぶ（CI では確認なしに付け替える）ため
   let host;
   try {
     host = JSON.parse(readFileSync("config/distribution.json", "utf8")).host;
@@ -134,16 +137,36 @@ function checkWrangler() {
     error("config/distribution.json", `読めません（${e.message}）`);
     return;
   }
-  const labels = typeof host === "string" ? host.split(".") : [];
-  if (labels.length !== 4 || labels[2] !== "workers" || labels[3] !== "dev") {
-    error("config/distribution.json", `host は <Worker 名>.<サブドメイン>.workers.dev の形にしてください（今は ${host}）`);
-  } else if (config.name !== labels[0]) {
-    error(file, `name（${config.name}）が、config/distribution.json の host の先頭（${labels[0]}）と違います`);
+  const hostname = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
+  if (typeof config.name !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(config.name)) {
+    error(file, `name は英小文字・数字・ハイフンにしてください（今は ${JSON.stringify(config.name)}）`);
   }
-  if (typeof host === "string" && host.includes("PLACEHOLDER")) {
-    notice(`配信ホストが仮の値です（${host}）。公開する前に config/distribution.json と wrangler.jsonc の name を本物にしてください`);
+  if (typeof host !== "string" || host === "") {
+    error("config/distribution.json", `host がありません（今は ${JSON.stringify(host)}）`);
+  } else if (host.includes("PLACEHOLDER")) {
+    notice(`配信ホストが仮の値です（${host}）。公開する前に config/distribution.json と wrangler.jsonc を本物にしてください`);
+  } else if (!hostname.test(host)) {
+    error("config/distribution.json", `host は英小文字のホスト名にしてください（今は ${host}）`);
+  } else if (host === "workers.dev" || host.endsWith(".workers.dev")) {
+    const labels = host.split(".");
+    if (labels.length !== 4) {
+      error("config/distribution.json", `workers.dev のときは、host を <Worker 名>.<サブドメイン>.workers.dev の形にしてください（今は ${host}）`);
+    } else if (config.name !== labels[0]) {
+      error(file, `name（${config.name}）が、config/distribution.json の host の先頭（${labels[0]}）と違います`);
+    }
+    if (config.workers_dev !== true) {
+      error(file, `host が workers.dev なので、workers_dev は true にしてください（今は ${JSON.stringify(config.workers_dev)}）`);
+    }
+  } else {
+    if (config.workers_dev !== false) {
+      error(file, `host がカスタムドメインなので、workers_dev は false にしてください（今は ${JSON.stringify(config.workers_dev)}）`);
+    }
+    const routing = findKeys(config, ["route", "routes"]);
+    if (routing.length > 0) {
+      error(file, `カスタムドメインは管理画面で Worker につなぎます。${routing.join(", ")} は書かないでください（CI のトークンにゾーンの権限がなく、wrangler がドメインを付け替えるおそれがあるため）`);
+    }
   }
-  ok(before, `${file}：静的アセットだけの設定です`);
+  ok(before, `${file}：静的アセットだけの設定です（${host}）`);
 }
 
 // --- 2. site/_headers ---
