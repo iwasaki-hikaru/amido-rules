@@ -65,7 +65,15 @@ fi
 cd deploy
 npm ci --no-audit --no-fund
 wrangler=./node_modules/.bin/wrangler
-"${wrangler}" whoami >/dev/null 2>&1 || "${wrangler}" login
+# wrangler whoami は、ログインしていなくても終了コード 0 で終わるので、表示で見分ける
+if "${wrangler}" whoami 2>&1 | grep -q -i "not authenticated"; then
+  "${wrangler}" login
+fi
+if "${wrangler}" whoami 2>&1 | grep -q -i "not authenticated"; then
+  echo "Cloudflare にログインできませんでした" >&2
+  rm -rf ../dist
+  exit 1
+fi
 echo
 "${wrangler}" whoami
 echo
