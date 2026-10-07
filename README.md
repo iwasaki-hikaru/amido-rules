@@ -56,7 +56,7 @@ rulestool は「拡張の中で 2 番目以降のカテゴリ（今は privacy �
 | `site/` | 配信サイトのページ（プライバシー・規約・サポート・ライセンス・動作確認・特定商取引法に基づく表記）、`demo/` の見本のページ（ニュース・レシピ・SNS）と `_headers` |
 | `wrangler.jsonc` | Cloudflare Workers の設定（Worker 名 `amido`、静的アセットだけ。workers.dev とプレビュー URL は使わず、カスタムドメインは管理画面でつなぐ） |
 | `deploy/` | wrangler の版の固定（`package.json` と `package-lock.json`。CI では `npm ci`） |
-| `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成）、`first-deploy.sh`（最初の 1 回だけ、運営者の手元から Worker を作り、サイトのページだけを公開する） |
+| `scripts/` | `fetch-converter.sh`（変換器のビルド）、`build-local.sh`（手元での一式の作成）、`keygen.sh`（本番の鍵の作成）、`first-deploy.sh`（最初の 1 回だけ、運営者の手元から Worker を作り、サイトのページだけを公開する）、`attach-domain.sh`（管理画面でドメインをつなげないときに、手元からつなぐ）|
 | `.github/workflows/` | `pr.yml`・`publish.yml`・`rollback.yml` |
 | `.github/scripts/` | CI の補助（配信の設定の検査、Node での署名の検証、本番の manifest の取得、版の番号の決定） |
 | `docs/` | [format.md](docs/format.md)（配信形式）、[runbook.md](docs/runbook.md)（運用の手順）、[licensing.md](docs/licensing.md)（ライセンスの判断材料）、[signing.md](docs/signing.md)（署名の鍵） |

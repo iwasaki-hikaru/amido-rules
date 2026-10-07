@@ -397,7 +397,7 @@ ios リポジトリの `scripts/configure.swift` を使うと、アプリ名・�
 Worker は、最初の 1 回だけ、運営者が手元から作ります。CI のトークンは Worker `amido` だけに絞るので、Worker を作れません。また、CI は公開の前に本番の manifest を取りに行き、名前解決できないと止まります。そのため、手元で Worker を作ってドメインをつないでから、CI の公開を承認します。2 回目からは CI だけが公開します。5. で誤って作った Worker を消してから行います。
 
 16. 手元で `scripts/first-deploy.sh` を実行する（運営者。Node.js 22 以上が要る）。`check-config.mjs` を通し、`site/` だけを `dist/` にして、`deploy/` の版を固定した wrangler で Worker `amido` に公開します。はじめに goalspace と同じアカウントの ID（管理画面の URL の `dash.cloudflare.com/<ID>/…`）を聞かれ、公開先をそのアカウントに固定する（環境変数の Cloudflare のトークンは使わない）。wrangler にログインしていなければブラウザでログインを求め、`wrangler whoami` の一覧にそのアカウントがあることを確かめてから公開する。CI と同じく、運営者向けの HTML のコメントと `.DS_Store` は除く。`v1/` を含めないので、本番の `/v1/manifest.json` は 404 のまま（CI は「まだ公開していない」と扱う）。最後に wrangler のログインを消すかを聞かれる（goalspace の Worker やゾーンにも届く広い権限なので、ほかの作業で使っていなければ消す）。本番で動いている Worker には使わない（`v1/` が消える）。
-17. 管理画面の「Workers & Pages」→ `amido` →「Settings」→「Domains & Routes」→「Add」→「Custom domain」で、`amido.goalspace.jp` をつなぐ。数分待って、次を確かめる：
+17. 管理画面の「Workers & Pages」→ `amido` →「Domains」（または「Settings」→「Domains & Routes」）→「Add Domain」で、`amido.goalspace.jp` をつなぐ。「No zones match」と出てつなげないとき（2026-10-07 に起きた）は、「Onboard domain」を押さずに、手元で `scripts/attach-domain.sh` を実行する（運営者のログインで、Worker のドメインの設定だけを変える。Worker の中身は変えない）。数分待って、次を確かめる：
     ```bash
     curl -s -o /dev/null -w "%{http_code}\n" https://amido.goalspace.jp/privacy           # 200（ページが開く）
     curl -s -o /dev/null -w "%{http_code}\n" https://amido.goalspace.jp/v1/manifest.json  # 404（まだ公開していない）
