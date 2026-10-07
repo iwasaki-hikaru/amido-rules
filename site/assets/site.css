@@ -74,10 +74,12 @@ button:focus-visible {
 }
 
 /* 本文へ移動するリンク（キーボード操作と読み上げのため。フォーカスしたときだけ見える） */
+/* フォーカスするまで、画面の上に隠す。文字の大きさが変わっても枠がはみ出さないように、自分の高さの分だけ上にずらす */
 .skip-link {
   position: absolute;
   left: 0.5rem;
-  top: -3rem;
+  top: 0;
+  transform: translateY(-110%);
   padding: 0.5rem 1rem;
   background: var(--bg);
   border: 2px solid var(--focus);
@@ -85,7 +87,7 @@ button:focus-visible {
 }
 
 .skip-link:focus {
-  top: 0.5rem;
+  transform: translateY(0.5rem);
 }
 
 .site-header,
@@ -173,6 +175,12 @@ ol {
 
 li + li {
   margin-top: 0.25rem;
+}
+
+/* 横に並べるリスト（ナビゲーション・フッター）では、上の余白を付けない（付けると、先頭だけが上にずれる） */
+.site-nav li + li,
+.site-footer li + li {
+  margin-top: 0;
 }
 
 dt {
