@@ -19,7 +19,7 @@
 |---|---|---|---|
 | 配信する変換後のリスト（`/v1/lists/*.json`、GitHub Release の一式） | CC BY-SA 3.0 | `LICENSE-rules`、`NOTICE`、`site/licenses.html`、Release の説明と添付 | **2026-10-04 に 3.0 のままと決定**（運営者が作業者の案を採用。[3.](#3-cc-by-sa-30-と-40)） |
 | 自作ルール（`custom/*.txt`） | CC BY-SA 3.0 | 各ファイルの先頭、`LICENSE-rules` | 同上 |
-| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList・Fanboy・EasyPrivacy の節がある） | 実装済み（annoyance と privacy は同梱せず、配信元から取得） |
+| アプリに同梱するリスト | 配信するものと同じ | アプリのライセンスの画面（ios の `App/Settings/SettingsView.swift` の `LicensesView`。EasyList・Fanboy・EasyPrivacy を「元のリスト」の節にまとめて表記。元のリストの URL・デュアルライセンスの説明・変換器の名前は Web の `/licenses` に置き、画面の「Web でくわしく見る」から開ける。2026-10-10） | 実装済み（annoyance と privacy は同梱せず、配信元から取得） |
 | ツールのコード（`Sources/`・`Tests/`・`scripts/`・`tools/`・`.github/`、`Package.swift`、`wrangler.jsonc`・`config/`・`deploy/`） | MIT | `LICENSE`、`NOTICE`、README、`site/licenses.html` | 2026-10-05 に決定（[9.](#9-ツールのライセンス)） |
 | サイトのページ（`site/`）・文書（`docs/`） | 権利は運営者（ライセンスを与えない） | `site/licenses.html`、`NOTICE` | 2026-10-05 に決定（[9.](#9-ツールのライセンス)） |
 | 変換器（SafariConverterLib） | GPLv3 | `site/licenses.html`、`NOTICE` | CI で実行するだけで、配布しない（[5.](#5-変換器safariconverterlib)） |
@@ -137,7 +137,7 @@
 | 公開リポジトリ（rules） | 自作ルール、ツール、（変換後の JSON は置かない） | ライセンスの URI、著作者、変更の説明 | `LICENSE-rules`・`NOTICE` あり（どちらも EasyList と Fanboy の 2 つと EasyPrivacy を挙げている） |
 | 配信サイト（`/v1/lists/*.json`） | 変換後のリスト | 同上 | `/licenses` に表記。JSON 自体には書けない（[3.](#確かめていないこと)） |
 | GitHub Release | 公開した一式（`dist/` の tar.gz） | 同上 | 説明に URI と著作者（EasyList と Fanboy の 2 つと EasyPrivacy。作者とは関係がないことも書く。publish.yml の「GitHub Release に保管する」）、`NOTICE`・`LICENSE-rules` を添付 |
-| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に同じ表記を出す | `LicensesView` に表記あり（EasyList・Fanboy・EasyPrivacy・自作のルール） |
+| アプリ | 同梱のリスト、ダウンロードしたリスト | 同上。アプリのライセンスの画面に要点（ライセンスの URI と全文・概要へのリンク、著作者、題名、変更、作者と関係がないこと）を出し、全文は `/licenses` へのリンク（2026-10-10） | `LicensesView` に表記あり（ブロックのルール・元のリスト（EasyList・Fanboy・EasyPrivacy）・自作のルール） |
 
 ---
 
