@@ -72,6 +72,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # ランナーに入っている Node は修正版への入れ替えが遅い（2026-10 のセキュリティリリースのあとも 24.21.0 のままだった）。
+      # .node-version の版を入れて使う。秘密を持つジョブもあるので、キャッシュは使わない
+      - name: Node.js を入れる
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+
       - name: 環境を記録する
         run: |
           if [ ! -d "$DEVELOPER_DIR" ]; then
@@ -244,6 +252,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # ランナーに入っている Node は修正版への入れ替えが遅い（2026-10 のセキュリティリリースのあとも 24.21.0 のままだった）。
+      # .node-version の版を入れて使う。秘密を持つジョブもあるので、キャッシュは使わない
+      - name: Node.js を入れる
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
 
       - name: 環境を確かめる
         run: |

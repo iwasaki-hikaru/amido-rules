@@ -6,6 +6,7 @@
 // 2. site/_headers：Cloudflare の制限（100 ルール・1 行 2,000 文字）に収まり、必要なルールがあるか
 // 3. site/ の .html（demo/ などのサブディレクトリも）：外部の読み込みや、CSP で止められる書き方（インラインのスクリプト・style 属性など）がないか
 // 4. deploy/：wrangler の版が固定されていて、package-lock.json と合っているか
+// 7. .node-version：CI の Node の版が完全に固定されていて、actions/setup-node がどこもそれを使っているか
 //
 // 使い方：node .github/scripts/check-config.mjs（リポジトリのルートで実行する）
 // 終了コード：0 = 問題なし、1 = 問題あり
@@ -403,12 +404,53 @@ function checkDeploy() {
   ok(before, `deploy/：wrangler ${wanted}`);
 }
 
+// --- 7. .node-version ---
+// CI は、ランナーに入っている Node ではなく、.node-version の版を actions/setup-node で入れて使う。
+// ランナーの Node は修正版への入れ替えが遅く、「24」のような書き方では、ランナーにある古い版が選ばれてしまう。
+function checkNodeVersion() {
+  const before = failures;
+  const file = ".node-version";
+  if (!existsSync(file)) {
+    error(file, "ありません。CI で使う Node の版（例 24.22.1）を 1 行で書いてください");
+    return;
+  }
+  const version = readFileSync(file, "utf8").trim();
+  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    error(file, `Node の版は完全に固定してください（例 24.22.1。今は ${JSON.stringify(version)}）`);
+    return;
+  }
+  let uses = 0;
+  for (const name of readdirSync(".github/workflows")) {
+    if (!/\.ya?ml$/.test(name)) continue;
+    const path = join(".github/workflows", name);
+    const lines = readFileSync(path, "utf8").split("\n");
+    lines.forEach((line, index) => {
+      if (/^\s*node-version\s*:/.test(line)) {
+        error(path, `${index + 1} 行目：node-version で版を書かず、node-version-file: .node-version を使ってください`);
+      }
+      if (!line.includes("actions/setup-node@")) return;
+      uses += 1;
+      // 同じステップの with: の中（次のステップの「- 」まで）に、.node-version の指定があるか
+      const rest = [];
+      for (const next of lines.slice(index + 1)) {
+        if (/^\s*- /.test(next)) break;
+        rest.push(next);
+      }
+      if (!rest.some((next) => /^\s*node-version-file\s*:\s*\.node-version\s*$/.test(next))) {
+        error(path, `${index + 1} 行目：actions/setup-node に node-version-file: .node-version がありません`);
+      }
+    });
+  }
+  ok(before, `.node-version：Node ${version}（ワークフローの actions/setup-node ${uses} か所）`);
+}
+
 checkWrangler();
 checkHeaders();
 checkHtml();
 checkDeploy();
 checkTrustedKeys();
 checkShellVariables();
+checkNodeVersion();
 
 if (failures > 0) {
   console.error(`問題が ${failures} 件あります`);

@@ -329,6 +329,7 @@ swift run -c release rulestool verify --base-url https://amido.goalspace.jp/
 どれも PR で行い、CI が通ることを確かめてからマージします。
 
 - **GitHub のアクション**：各アクションのリリースのページで新しいタグを確かめ、そのタグのコミットの SHA を調べて、`uses:` の SHA とコメント（`# v7.0.1` など）を直す。SHA は、タグから調べたものを使う（例：`curl -s https://api.github.com/repos/actions/checkout/git/ref/tags/<タグ>`。`"type": "tag"` なら、指している先のコミットの SHA）。
+- **Node.js（CI）**：CI は、ランナーに入っている Node ではなく、`.node-version` の版（今は 24.22.1）を actions/setup-node で入れて使う。Node のセキュリティリリース（https://nodejs.org/en/blog/vulnerability ）が出たら、同じ系列の修正版の番号に直す。ランナーの Node は修正版への入れ替えが遅く、修正前の版が何週間も残る（2026-10 のリリースのあとも 24.21.0 だった）ので、待たない。`check-config.mjs` が、版が完全に固定されているか（`24` のような書き方は通らない）と、ワークフローの setup-node がどれもこのファイルを使っているかを確かめる。手元で使う Node は、22 以降の修正済みの版にする（`scripts/first-deploy.sh`・`scripts/attach-domain.sh` も手元の Node で動く）。
 - **wrangler**：`deploy/package.json` の版を直し、`cd deploy && npm install --package-lock-only --ignore-scripts` で `package-lock.json` を作り直す。
 - **変換器（SafariConverterLib）**：`scripts/fetch-converter.sh` の `TAG` と `COMMIT` を直す（COMMIT はタグのコミットを自分で確かめる）。変換結果が変わるので、件数の変化で止まることがある。CI のまとめで、変換エラーや件数の変わり方を確かめる。
 - **Xcode・ランナー**：`macos-26` と Xcode 26.6 に固定しています。上げるときは、3 つのワークフローの `runs-on` と `DEVELOPER_DIR` を同時に直す。
