@@ -55,7 +55,7 @@
 | `schema` | 整数。今は `1` |
 | `version` | `YYYY.MM.DD.N`（N は 1 以上の整数）。アプリは「今の版と違えば適用する」。大小は比べない |
 | `published_at` | RFC 3339 の UTC、秒まで（`2026-10-05T03:00:00Z`） |
-| `min_app_build` | 整数（1 以上）。アプリの `CFBundleVersion`（整数）がこれより小さければ、アプリは適用せず「新しいルールには、アプリの更新が必要です。」と表示する。予算を上げた版を出すときに使う（docs/runbook.md の「予算を上げる」） |
+| `min_app_build` | 整数（1 以上）。アプリの `CFBundleVersion`（整数）がこれより小さければ、アプリは適用せず「アプリを更新してください」と表示する |
 | `lists[].category` | `basic`・`annoyance`・`privacy`・`scam`。この順に並べる。アプリは知らないカテゴリを無視する（前の版のアプリは `privacy` を知らないので、無視する）。同じカテゴリは 1 回だけ |
 | `lists[].url` | `lists/<category>.<hash8>.json` の形の相対パス（`^lists/[a-z]+\.[0-9a-f]{8}\.json$`）。manifest.json と同じディレクトリを基準にする。アプリはこれ以外の形（絶対 URL・`..` を含むものなど）を拒否する |
 | `lists[].sha256` | ファイルの SHA-256（小文字の 16 進、64 文字） |
